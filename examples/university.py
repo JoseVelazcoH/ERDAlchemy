@@ -74,4 +74,4 @@ if __name__ == "__main__":
         title="University (N:N)",
         scale=2,
     )
-    print("Generated examples/university.png")
+    print("Generated assets/university.png")

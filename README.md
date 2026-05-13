@@ -5,9 +5,11 @@ Interactive ERD visualizer for SQLAlchemy 2.0 models. Introspects your `Declarat
 - Drag-and-drop interactive HTML output
 - Auto-layout via force-directed algorithm
 - Hover highlighting for tables and relationships
-- Multiple export formats: HTML, SVG, PNG, PDF
+- Export to HTML, SVG, PNG, and PDF
 - Built-in color themes and per-table color overrides
 - Zero dependencies beyond SQLAlchemy
+
+![preview](assets/theme_default.png)
 
 ## Installation
 
@@ -40,9 +42,9 @@ sqlalchemy-erd myapp.models:Base
 sqlalchemy-erd myapp.models:Base --format svg --output erd.svg
 
 # With theme and custom title
-sqlalchemy-erd myapp.models:Base --format png --theme blue --title "My App"
+sqlalchemy-erd myapp.models:Base --format png --theme blue --title "My Schema"
 
-# Per-table color overrides (JSON)
+# Per-table color overrides as JSON
 sqlalchemy-erd myapp.models:Base --colors '{"users": "#1d4ed8", "orders": "#059669"}'
 
 # High-resolution PNG
@@ -55,41 +57,23 @@ sqlalchemy-erd myapp.models:Base --format png --scale 3
 from sqlalchemy_erd import generate_erd
 from myapp.models import Base
 
-# HTML (interactive, no extra deps)
 generate_erd(Base, output="erd.html", format="html")
-
-# SVG (static vector)
-generate_erd(Base, output="erd.svg", format="svg")
-
-# PNG (requires cairosvg)
-generate_erd(Base, output="erd.png", format="png", scale=2)
-
-# PDF (requires cairosvg)
-generate_erd(Base, output="erd.pdf", format="pdf")
+generate_erd(Base, output="erd.svg",  format="svg")
+generate_erd(Base, output="erd.png",  format="png", scale=2)   # requires cairosvg
+generate_erd(Base, output="erd.pdf",  format="pdf")             # requires cairosvg
 ```
 
 ## Themes
 
-Five built-in themes plus per-table color overrides.
+Five built-in themes: `default`, `blue`, `green`, `dark`, `rose`.
 
-### `default`
-![default](assets/theme_default.png)
+Preview images for each theme are available in [`assets/`](assets/).
 
-### `blue`
-![blue](assets/theme_blue.png)
+```python
+generate_erd(Base, theme="dark")
+```
 
-### `green`
-![green](assets/theme_green.png)
-
-### `dark`
-![dark](assets/theme_dark.png)
-
-### `rose`
-![rose](assets/theme_rose.png)
-
-### Per-table colors
-
-Assign any hex color to individual tables while keeping the rest of the theme:
+Per-table color overrides let you assign any hex color to individual tables while keeping the rest of the theme intact:
 
 ```python
 generate_erd(
@@ -102,8 +86,6 @@ generate_erd(
     },
 )
 ```
-
-![custom](assets/theme_custom.png)
 
 ## Supported column types
 
@@ -132,12 +114,12 @@ Nullable columns display a `?` suffix (e.g. `text?`, `date?`).
 
 ## Examples
 
-See the [`examples/`](examples/) directory for complete working schemas:
+See the [`examples/`](examples/) directory:
 
-- [`examples/demo.py`](examples/demo.py) - data catalog schema
-- [`examples/ecommerce.py`](examples/ecommerce.py) - 1:N chains (Category, Product, Order, Customer)
-- [`examples/university.py`](examples/university.py) - N:N via association tables (Student, Course, Professor)
-- [`examples/hr.py`](examples/hr.py) - 1:1 and 1:N (Employee, Profile, Department, Project)
+- [`examples/demo.py`](examples/demo.py) - blog schema (User, Post, Comment)
+- [`examples/ecommerce.py`](examples/ecommerce.py) - 1:N chains (Category, Product, Order, Customer, OrderItem)
+- [`examples/university.py`](examples/university.py) - N:N via association tables (Student, Course, Professor, Department)
+- [`examples/hr.py`](examples/hr.py) - 1:1 and 1:N (Employee, EmployeeProfile, Department, Project)
 
 ## License
 

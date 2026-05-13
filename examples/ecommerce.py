@@ -70,4 +70,4 @@ if __name__ == "__main__":
         title="E-commerce (1:N)",
         scale=2,
     )
-    print("Generated examples/ecommerce.png")
+    print("Generated assets/ecommerce.png")

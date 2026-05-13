@@ -1,6 +1,6 @@
 """HR schema — 1:1 relationships alongside 1:N."""
 
-from sqlalchemy import ForeignKey, String, Text, Date, Numeric, Integer
+from sqlalchemy import ForeignKey, String, Text, Date, Numeric
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import date
 from decimal import Decimal
@@ -74,4 +74,4 @@ if __name__ == "__main__":
         scale=2,
         table_colors={"employee_profiles": "#1e40af"},
     )
-    print("Generated examples/hr.png")
+    print("Generated assets/hr.png")
