@@ -14,3 +14,7 @@ venv/
 .pytest_cache/
 *.html
 !examples/*.html
+*.png
+!examples/*.png
+*.pdf
+!examples/*.pdf
