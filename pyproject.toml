@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sqlalchemy-erd"
+name = "erdalchemy"
 version = "0.1.0"
 description = "Interactive ERD visualization for SQLAlchemy 2.0 models"
 readme = "README.md"
