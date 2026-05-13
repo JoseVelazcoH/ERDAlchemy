@@ -1,4 +1,4 @@
-# sqlalchemy-erd
+# erdalchemy
 
 Interactive ERD visualizer for SQLAlchemy 2.0 models. Introspects your `DeclarativeBase` metadata and generates diagram files with no manual configuration required.
 
@@ -9,18 +9,18 @@ Interactive ERD visualizer for SQLAlchemy 2.0 models. Introspects your `Declarat
 - Built-in color themes and per-table color overrides
 - Zero dependencies beyond SQLAlchemy
 
-![preview](examples/blog/blog.png)
+![preview](https://raw.githubusercontent.com/JoseVelazcoH/ERDAlchemy/main/examples/blog/blog.png)
 
 ## Installation
 
 ```bash
-pip install sqlalchemy-erd
+pip install erdalchemy
 ```
 
 PNG and PDF export require an optional dependency:
 
 ```bash
-pip install "sqlalchemy-erd[all]"
+pip install "erdalchemy[all]"
 ```
 
 ## Quick start
@@ -67,7 +67,7 @@ generate_erd(Base, output="erd.pdf",  format="pdf")             # requires cairo
 
 Five built-in themes: `default`, `blue`, `green`, `dark`, `rose`.
 
-Preview images for each theme are available in [`examples/themes/`](examples/themes/).
+Preview images for each theme are available in [`examples/themes/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/themes).
 
 ```python
 generate_erd(Base, theme="dark")
@@ -114,12 +114,12 @@ Nullable columns display a `?` suffix (e.g. `text?`, `date?`).
 
 ## Examples
 
-See the [`examples/`](examples/) directory:
+See the [`examples/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples) directory:
 
-- [`examples/blog/`](examples/blog/) - blog schema (User, Post, Comment)
-- [`examples/ecommerce/`](examples/ecommerce/) - 1:N chains (Category, Product, Order, Customer, OrderItem)
-- [`examples/university/`](examples/university/) - N:N via association tables (Student, Course, Professor, Department)
-- [`examples/hr/`](examples/hr/) - 1:1 and 1:N (Employee, EmployeeProfile, Department, Project)
+- [`examples/blog/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/blog) - blog schema (User, Post, Comment)
+- [`examples/ecommerce/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/ecommerce) - 1:N chains (Category, Product, Order, Customer, OrderItem)
+- [`examples/university/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/university) - N:N via association tables (Student, Course, Professor, Department)
+- [`examples/hr/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/hr) - 1:1 and 1:N (Employee, EmployeeProfile, Department, Project)
 
 ## License
 
