@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     generate_erd(
         Base,
-        output="examples/ecommerce.png",
+        output="assets/ecommerce.png",
         format="png",
         theme="default",
         title="E-commerce (1:N)",

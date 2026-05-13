@@ -15,6 +15,6 @@ venv/
 *.html
 !examples/*.html
 *.png
-!examples/*.png
+!assets/*.png
 *.pdf
-!examples/*.pdf
+!assets/*.pdf

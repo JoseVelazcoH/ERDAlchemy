@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
     generate_erd(
         Base,
-        output="examples/hr.png",
+        output="assets/hr.png",
         format="png",
         theme="green",
         title="HR (1:1, 1:N)",
