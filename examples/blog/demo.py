@@ -44,5 +44,5 @@ class Comment(Base):
 if __name__ == "__main__":
     from sqlalchemy_erd import generate_erd
 
-    generate_erd(Base, output="assets/demo.png", format="png", title="Blog", scale=2)
-    print("Generated assets/demo.png")
+    generate_erd(Base, output="examples/blog/blog.png", format="png", title="Blog", scale=2)
+    print("Generated examples/blog/blog.png")

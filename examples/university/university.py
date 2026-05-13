@@ -68,10 +68,10 @@ if __name__ == "__main__":
 
     generate_erd(
         Base,
-        output="assets/university.png",
+        output="examples/university/university.png",
         format="png",
         theme="blue",
         title="University (N:N)",
         scale=2,
     )
-    print("Generated assets/university.png")
+    print("Generated examples/university/university.png")

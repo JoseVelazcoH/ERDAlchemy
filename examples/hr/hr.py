@@ -67,11 +67,11 @@ if __name__ == "__main__":
 
     generate_erd(
         Base,
-        output="assets/hr.png",
+        output="examples/hr/hr.png",
         format="png",
         theme="green",
         title="HR (1:1, 1:N)",
         scale=2,
         table_colors={"employee_profiles": "#1e40af"},
     )
-    print("Generated assets/hr.png")
+    print("Generated examples/hr/hr.png")
