@@ -13,7 +13,7 @@ from sqlalchemy_erd.layout import force_directed_layout
 from sqlalchemy_erd.theme import Theme, THEMES, get_theme
 from sqlalchemy_erd.export import to_html, to_svg, to_png, to_pdf
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 def generate_erd(
