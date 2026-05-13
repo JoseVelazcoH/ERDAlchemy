@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sqlalchemy-erd"
+version = "0.1.0"
+description = "Interactive ERD visualization for SQLAlchemy 2.0 models"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Jose Velazco" }]
+keywords = ["sqlalchemy", "erd", "diagram", "visualization", "database"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Software Development :: Documentation",
+]
+dependencies = ["sqlalchemy>=2.0"]
+
+[project.optional-dependencies]
+png = ["cairosvg>=2.7"]
+pdf = ["cairosvg>=2.7"]
+all = ["cairosvg>=2.7"]
+
+[project.scripts]
+sqlalchemy-erd = "sqlalchemy_erd.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sqlalchemy_erd"]
