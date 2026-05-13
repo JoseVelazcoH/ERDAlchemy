@@ -9,7 +9,7 @@ Interactive ERD visualizer for SQLAlchemy 2.0 models. Introspects your `Declarat
 - Built-in color themes and per-table color overrides
 - Zero dependencies beyond SQLAlchemy
 
-![preview](assets/theme_default.png)
+![preview](examples/blog/blog.png)
 
 ## Installation
 
@@ -67,7 +67,7 @@ generate_erd(Base, output="erd.pdf",  format="pdf")             # requires cairo
 
 Five built-in themes: `default`, `blue`, `green`, `dark`, `rose`.
 
-Preview images for each theme are available in [`assets/`](assets/).
+Preview images for each theme are available in [`examples/themes/`](examples/themes/).
 
 ```python
 generate_erd(Base, theme="dark")
@@ -116,10 +116,10 @@ Nullable columns display a `?` suffix (e.g. `text?`, `date?`).
 
 See the [`examples/`](examples/) directory:
 
-- [`examples/demo.py`](examples/demo.py) - blog schema (User, Post, Comment)
-- [`examples/ecommerce.py`](examples/ecommerce.py) - 1:N chains (Category, Product, Order, Customer, OrderItem)
-- [`examples/university.py`](examples/university.py) - N:N via association tables (Student, Course, Professor, Department)
-- [`examples/hr.py`](examples/hr.py) - 1:1 and 1:N (Employee, EmployeeProfile, Department, Project)
+- [`examples/blog/`](examples/blog/) - blog schema (User, Post, Comment)
+- [`examples/ecommerce/`](examples/ecommerce/) - 1:N chains (Category, Product, Order, Customer, OrderItem)
+- [`examples/university/`](examples/university/) - N:N via association tables (Student, Course, Professor, Department)
+- [`examples/hr/`](examples/hr/) - 1:1 and 1:N (Employee, EmployeeProfile, Department, Project)
 
 ## License
 
