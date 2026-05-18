@@ -39,7 +39,27 @@ def force_directed_layout(
     relationships: list[RelationshipInfo],
     iterations: int = 300,
     seed: int | None = 42,
+    *,
+    k_repulse: float = 35000.0,
+    k_attract: float = 0.1,
+    k_align: float = 0.02,
+    ideal_len: float = 280.0,
 ) -> dict[str, tuple[float, float]]:
+    """Compute table positions using a force-directed graph layout.
+
+    Args:
+        tables: Table metadata extracted by ``introspect_models``.
+        relationships: FK / M:N edges between tables.
+        iterations: Number of simulation steps (higher = more stable).
+        seed: Random seed for reproducible layouts (``None`` for random).
+        k_repulse: Repulsion strength between all nodes.
+        k_attract: Attraction strength between connected nodes.
+        k_align: Horizontal-alignment force for connected nodes.
+        ideal_len: Target edge length in pixels between connected nodes.
+
+    Returns:
+        Mapping of table name → ``(x, y)`` position.
+    """
     if not tables:
         return {}
 
@@ -61,9 +81,6 @@ def force_directed_layout(
     spread = max(300, n * 150)
     pos = [Vec(rng.uniform(50, spread), rng.uniform(50, spread)) for _ in range(n)]
 
-    k_repulse = 50000.0
-    k_attract = 0.005
-    ideal_len = 300.0
     temp = spread / 2.0
     cooling = temp / (iterations + 1)
 
@@ -88,6 +105,12 @@ def force_directed_layout(
             forces[i_idx] = forces[i_idx] + f
             forces[j_idx] = forces[j_idx] - f
 
+        for i_idx, j_idx in edges:
+            dy = pos[j_idx].y - pos[i_idx].y
+            align_f = Vec(0, dy * k_align)
+            forces[i_idx] = forces[i_idx] + align_f
+            forces[j_idx] = forces[j_idx] - align_f
+
         for i in range(n):
             f = forces[i]
             fl = max(f.length(), 0.01)
@@ -95,6 +118,31 @@ def force_directed_layout(
             pos[i] = pos[i] + Vec(f.x / fl * capped, f.y / fl * capped)
 
         temp -= cooling
+
+    heights = [node_h(table_map[name]) for name in table_names]
+    gap = 15.0
+    for _ in range(50):
+        resolved = True
+        for i in range(n):
+            for j in range(i + 1, n):
+                dx = pos[i].x - pos[j].x
+                dy = pos[i].y - pos[j].y
+                min_dx = NODE_W + gap
+                min_dy = (heights[i] + heights[j]) / 2 + gap
+                if abs(dx) < min_dx and abs(dy) < min_dy:
+                    ox = (min_dx - abs(dx)) / 2 + 1
+                    oy = (min_dy - abs(dy)) / 2 + 1
+                    if ox < oy:
+                        sx = ox if dx >= 0 else -ox
+                        pos[i] = Vec(pos[i].x + sx, pos[i].y)
+                        pos[j] = Vec(pos[j].x - sx, pos[j].y)
+                    else:
+                        sy = oy if dy >= 0 else -oy
+                        pos[i] = Vec(pos[i].x, pos[i].y + sy)
+                        pos[j] = Vec(pos[j].x, pos[j].y - sy)
+                    resolved = False
+        if resolved:
+            break
 
     min_x = min(p.x for p in pos)
     min_y = min(p.y for p in pos)

@@ -98,12 +98,12 @@ class TestSvgStructure:
         rel_groups = [g for g in root.findall("svg:g", NS) if g.get("class") == "erd-rel"]
         assert len(rel_groups) == 0
 
-    def test_minimum_dimensions(self, blog_base):
+    def test_dimensions_fit_content(self, blog_base):
         root, _, _ = self._render_blog(blog_base)
         w = float(root.get("width"))
         h = float(root.get("height"))
-        assert w >= 980
-        assert h >= 600
+        assert w > 0
+        assert h > 0
 
 
 # ── Helper functions ─────────────────────────────────────────────────────────

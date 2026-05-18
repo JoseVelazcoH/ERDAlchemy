@@ -224,6 +224,28 @@ class TestIntrospectSameParentFKs:
             assert not (rel.from_card == "N" and rel.to_card == "N")
 
 
+# ── multiple FKs to same target ──────────────────────────────────────────────
+
+class TestIntrospectMultipleFksSameTarget:
+    def test_both_fks_rendered(self, multi_fk_base):
+        _, rels = introspect_models(multi_fk_base)
+        user_rels = [r for r in rels if r.from_table == "users" and r.to_table == "tasks"]
+        assert len(user_rels) == 2
+
+    def test_fk_columns_distinct(self, multi_fk_base):
+        _, rels = introspect_models(multi_fk_base)
+        user_rels = [r for r in rels if r.from_table == "users" and r.to_table == "tasks"]
+        fk_cols = {r.fk_column for r in user_rels}
+        assert fk_cols == {"assignee_id", "reviewer_id"}
+
+    def test_both_are_1n(self, multi_fk_base):
+        _, rels = introspect_models(multi_fk_base)
+        user_rels = [r for r in rels if r.from_table == "users" and r.to_table == "tasks"]
+        for rel in user_rels:
+            assert rel.from_card == "1"
+            assert rel.to_card == "N"
+
+
 # ── introspect_models — circular FKs ─────────────────────────────────────────
 
 class TestIntrospectCircular:

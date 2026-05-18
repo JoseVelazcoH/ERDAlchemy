@@ -25,11 +25,20 @@ def generate_erd(
     title: str = "ERD",
     scale: int = 2,
     schemas: list[str] | None = None,
+    *,
+    k_repulse: float = 35000.0,
+    k_attract: float = 0.1,
+    k_align: float = 0.02,
+    ideal_len: float = 280.0,
 ) -> Union[str, bytes]:
     tables, relationships = introspect_models(base_or_metadata, schemas=schemas)
     resolved_theme = get_theme(theme, table_colors)
     apply_schema_colors(resolved_theme, tables)
-    positions = force_directed_layout(tables, relationships)
+    positions = force_directed_layout(
+        tables, relationships,
+        k_repulse=k_repulse, k_attract=k_attract,
+        k_align=k_align, ideal_len=ideal_len,
+    )
 
     if format == "html":
         content = to_html(tables, relationships, positions, resolved_theme, title=title)

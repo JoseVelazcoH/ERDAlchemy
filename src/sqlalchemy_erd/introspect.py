@@ -129,7 +129,7 @@ def introspect_models(
         for col in table.columns:
             for fk in col.foreign_keys:
                 ref_table = fk.column.table.fullname
-                pair = (table_key, ref_table)
+                pair = (table_key, ref_table, col.name)
                 if pair not in seen_fks:
                     seen_fks.add(pair)
                     relationships.append(RelationshipInfo(

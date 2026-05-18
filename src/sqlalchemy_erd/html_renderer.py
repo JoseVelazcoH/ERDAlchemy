@@ -104,13 +104,29 @@ const ENTITY_MAP = Object.fromEntries(ENTITIES.map(e => [e.id, e]));
 
 function nodeH(e) {{ return HEADER_H + PAD_ + e.fields.length * FIELD_H + PAD_; }}
 
-function connPt(id, side) {{
+function colIndex(entity, colName) {{
+  for (let i = 0; i < entity.fields.length; i++) {{
+    if (entity.fields[i].name === colName) return i;
+  }}
+  return null;
+}}
+
+function firstPkIndex(entity) {{
+  for (let i = 0; i < entity.fields.length; i++) {{
+    if (entity.fields[i].nameWeight === '700') return i;
+  }}
+  return null;
+}}
+
+function connPt(id, side, cIdx) {{
   const [x, y] = positions[id];
-  const h = nodeH(ENTITY_MAP[id]);
+  const e = ENTITY_MAP[id];
+  const h = nodeH(e);
+  const cy = cIdx != null ? y + HEADER_H + PAD_ + cIdx * FIELD_H + Math.floor(FIELD_H/2) : y + h/2;
   if (side === 'top')    return [x + NODE_W/2, y];
   if (side === 'bottom') return [x + NODE_W/2, y + h];
-  if (side === 'left')   return [x, y + h/2];
-  return [x + NODE_W, y + h/2];
+  if (side === 'left')   return [x, cy];
+  return [x + NODE_W, cy];
 }}
 
 function bestSide(fromId, toId) {{
@@ -161,8 +177,8 @@ function render() {{
   const svg = document.getElementById('erd');
   svg.innerHTML = '';
 
-  const maxX = Math.max(980, ...ENTITIES.map(e => positions[e.id][0] + NODE_W + 60));
-  const maxY = Math.max(600, ...ENTITIES.map(e => positions[e.id][1] + nodeH(e) + 60));
+  const maxX = Math.max(...ENTITIES.map(e => positions[e.id][0] + NODE_W + 60));
+  const maxY = Math.max(...ENTITIES.map(e => positions[e.id][1] + nodeH(e) + 60));
   svg.setAttribute('width', maxX);
   svg.setAttribute('height', maxY);
   svg.style.cursor = dragging ? 'grabbing' : 'default';
@@ -181,13 +197,35 @@ function render() {{
   // Edges — tagged with data attributes for updateHighlights
   for (const rel of RELATIONS) {{
     if (!ENTITY_MAP[rel.from] || !ENTITY_MAP[rel.to]) continue;
-    const [fs, ts] = bestSide(rel.from, rel.to);
-    const fp = connPt(rel.from, fs);
-    const tp = connPt(rel.to, ts);
+    const fe = ENTITY_MAP[rel.from], te = ENTITY_MAP[rel.to];
+    const isVia = rel.fkCol && rel.fkCol.startsWith('via ');
+    const fromIdx = isVia ? null : firstPkIndex(fe);
+    const toIdx = isVia ? null : colIndex(te, rel.fkCol);
+
+    let fs, ts, fp, tp;
+    if (isVia) {{
+      [fs, ts] = bestSide(rel.from, rel.to);
+      fp = connPt(rel.from, fs);
+      tp = connPt(rel.to, ts);
+    }} else {{
+      const [fx, fy] = positions[rel.from];
+      const [tx, ty] = positions[rel.to];
+      const dx = (tx + NODE_W/2) - (fx + NODE_W/2);
+      const dy = (ty + nodeH(te)/2) - (fy + nodeH(fe)/2);
+      if (Math.abs(dx) > Math.abs(dy)) {{
+        fs = dx > 0 ? 'right' : 'left';
+        ts = dx > 0 ? 'left' : 'right';
+      }} else {{
+        const side = dx >= 0 ? 'right' : 'left';
+        fs = ts = side;
+      }}
+      fp = connPt(rel.from, fs, fromIdx);
+      tp = connPt(rel.to, ts, toIdx);
+    }}
+
     const d = makePath(fp, fs, tp, ts);
     const isNN = rel.fromCard === 'N' && rel.toCard === 'N';
-    const fe = ENTITY_MAP[rel.from], te = ENTITY_MAP[rel.to];
-    const isCross = fe && te && Object.keys(SCHEMA_COLORS).length > 0 &&
+    const isCross = Object.keys(SCHEMA_COLORS).length > 0 &&
       (fe.schema != null ? fe.schema : '_default') !== (te.schema != null ? te.schema : '_default');
 
     const g = el('g', {{ 'data-rel-from': rel.from, 'data-rel-to': rel.to }}, svg);
@@ -430,5 +468,6 @@ def _build_relations_json(
                 "to": r.to_table,
                 "fromCard": r.from_card,
                 "toCard": r.to_card,
+                "fkCol": r.fk_column,
             })
     return json.dumps(rels)
