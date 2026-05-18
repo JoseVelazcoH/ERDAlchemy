@@ -246,3 +246,28 @@ Table(
 @pytest.fixture
 def same_parent_metadata_fixture():
     return same_parent_metadata
+
+
+# ── Multiple FKs to same target ──────────────────────────────────────────────
+
+class MultiFkBase(DeclarativeBase):
+    pass
+
+
+class FkUser(MultiFkBase):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+
+
+class Task(MultiFkBase):
+    __tablename__ = "tasks"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    assignee_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    reviewer_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    title: Mapped[str] = mapped_column(String(200))
+
+
+@pytest.fixture
+def multi_fk_base():
+    return MultiFkBase
