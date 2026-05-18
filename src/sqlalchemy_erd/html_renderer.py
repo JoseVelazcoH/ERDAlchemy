@@ -18,6 +18,10 @@ def render_html(
     entities_js = _build_entities_json(tables, theme)
     relations_js = _build_relations_json(relationships, tables, positions)
     positions_js = json.dumps({t.name: list(positions[t.name]) for t in tables})
+    schema_colors_js = json.dumps({
+        (s if s is not None else "_default"): c
+        for s, c in theme.schema_colors.items()
+    })
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -73,6 +77,7 @@ svg {{ display: block; user-select: none; }}
 const ENTITIES = {entities_js};
 const RELATIONS = {relations_js};
 const INITIAL_POS = {positions_js};
+const SCHEMA_COLORS = {schema_colors_js};
 
 const NODE_W = {NODE_W};
 const HEADER_H = {HEADER_H};
@@ -181,6 +186,9 @@ function render() {{
     const tp = connPt(rel.to, ts);
     const d = makePath(fp, fs, tp, ts);
     const isNN = rel.fromCard === 'N' && rel.toCard === 'N';
+    const fe = ENTITY_MAP[rel.from], te = ENTITY_MAP[rel.to];
+    const isCross = fe && te && Object.keys(SCHEMA_COLORS).length > 0 &&
+      (fe.schema != null ? fe.schema : '_default') !== (te.schema != null ? te.schema : '_default');
 
     const g = el('g', {{ 'data-rel-from': rel.from, 'data-rel-to': rel.to }}, svg);
     el('path', {{ d, fill:'none', stroke:'transparent', 'stroke-width':'18' }}, g);
@@ -190,6 +198,7 @@ function render() {{
       'marker-end': 'url(#arr)'
     }};
     if (isNN) edgeAttrs['stroke-dasharray'] = '5 3';
+    else if (isCross) edgeAttrs['stroke-dasharray'] = '8 4';
     el('path', edgeAttrs, g);
 
     const fl = labelPos(fp, fs);
@@ -399,6 +408,7 @@ def _build_entities_json(
         entities.append({
             "id": t.name,
             "label": t.class_name,
+            "schema": t.schema,
             "headerColor": header_color,
             "hoverColor": theme.header_hover_color,
             "fields": fields,

@@ -119,6 +119,8 @@ def render_svg(
     parts.append(f'  <rect width="100%" height="100%" fill="{theme.bg_color}" />')
     parts.append(f'  <rect width="100%" height="100%" fill="url(#erd-dots)" />')
 
+    multi_schema = bool(theme.schema_colors)
+
     for rel in relationships:
         if rel.from_table not in table_map or rel.to_table not in table_map:
             continue
@@ -131,7 +133,16 @@ def render_svg(
         tpt = _conn_pt(tp, tt, ts)
         path_d = _make_path(fpt, fs, tpt, ts)
         is_nn = rel.from_card == "N" and rel.to_card == "N"
-        dash = ' stroke-dasharray="5 3"' if is_nn else ""
+        is_cross = multi_schema and (
+            table_map.get(rel.from_table, tables[0]).schema
+            != table_map.get(rel.to_table, tables[0]).schema
+        )
+        if is_nn:
+            dash = ' stroke-dasharray="5 3"'
+        elif is_cross:
+            dash = ' stroke-dasharray="8 4"'
+        else:
+            dash = ""
 
         fl = _label_pos(fpt, fs)
         tl = _label_pos(tpt, ts)
