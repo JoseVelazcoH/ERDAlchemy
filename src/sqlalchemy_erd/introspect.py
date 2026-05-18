@@ -142,27 +142,33 @@ def introspect_models(
 
     association_tables = set()
     for table_key, table in filtered_items:
-        cols = list(table.columns)
-        fk_count = sum(1 for c in cols if c.foreign_keys)
-        if fk_count >= 2 and len(cols) <= fk_count + 1:
-            fk_targets = []
-            for c in cols:
-                for fk in c.foreign_keys:
-                    fk_targets.append(fk.column.table.fullname)
-            if len(fk_targets) == 2:
-                association_tables.add(table_key)
-                a, b = fk_targets
-                relationships = [
-                    r for r in relationships
-                    if not (r.to_table == table_key)
-                ]
-                relationships.append(RelationshipInfo(
-                    from_table=a,
-                    to_table=b,
-                    from_card="N",
-                    to_card="N",
-                    fk_column=f"via {table.name}",
-                ))
+        pk_col_names = {c.name for c in table.primary_key.columns}
+        if len(pk_col_names) < 2:
+            continue
+        pk_fk_cols = [
+            c for c in table.columns
+            if c.name in pk_col_names and c.foreign_keys
+        ]
+        if len(pk_fk_cols) != len(pk_col_names):
+            continue
+        fk_targets = []
+        for c in pk_fk_cols:
+            for fk in c.foreign_keys:
+                fk_targets.append(fk.column.table.fullname)
+        if len(fk_targets) == 2 and fk_targets[0] != fk_targets[1]:
+            association_tables.add(table_key)
+            a, b = fk_targets
+            relationships = [
+                r for r in relationships
+                if not (r.to_table == table_key)
+            ]
+            relationships.append(RelationshipInfo(
+                from_table=a,
+                to_table=b,
+                from_card="N",
+                to_card="N",
+                fk_column=f"via {table.name}",
+            ))
 
     tables = [t for t in tables if t.name not in association_tables]
 
