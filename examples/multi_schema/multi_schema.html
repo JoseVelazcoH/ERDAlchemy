@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Schema ERD</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #f9fafb; overflow: auto; font-family: system-ui, -apple-system, sans-serif; }
+.toolbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e5e7eb;
+}
+.toolbar h1 { font-size: 14px; font-weight: 600; color: #1f2937; margin-right: auto; }
+.toolbar button {
+  padding: 5px 12px; font-size: 11px; border-radius: 6px; cursor: pointer;
+  border: 1px solid #d1d5db; background: white; color: #374151;
+  transition: background 0.15s;
+}
+.toolbar button:hover { background: #f3f4f6; }
+.toolbar select {
+  padding: 5px 8px; font-size: 11px; border-radius: 6px;
+  border: 1px solid #d1d5db; background: white; color: #374151;
+}
+.hint {
+  position: fixed; bottom: 12px; right: 16px;
+  font-size: 11px; color: #9ca3af; pointer-events: none; user-select: none;
+}
+svg { display: block; user-select: none; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <h1>Multi-Schema ERD</h1>
+  <select id="exportFmt">
+    <option value="html">HTML</option>
+    <option value="svg">SVG</option>
+    <option value="png">PNG</option>
+  </select>
+  <button onclick="exportDiagram()">Export</button>
+  <button onclick="resetLayout()">Reset</button>
+</div>
+<p class="hint">Drag to move &middot; Hover to highlight</p>
+
+<svg id="erd" style="margin-top: 44px;"></svg>
+
+<script>
+// ── Data ──
+const ENTITIES = [{"id": "audit.audit_logs", "label": "audit.AuditLog", "schema": "audit", "headerColor": "#6366f1", "hoverColor": "#4a1d5e", "fields": [{"name": "id", "nameColor": "#5C2472", "nameWeight": "700", "kindColor": "#5C2472", "kindLabel": "PK"}, {"name": "user_id", "nameColor": "#9a3412", "nameWeight": "400", "kindColor": "#c2410c", "kindLabel": "FK"}, {"name": "action", "nameColor": "#3d4552", "nameWeight": "400", "kindColor": "#6b7280", "kindLabel": "string"}, {"name": "detail", "nameColor": "#3d4552", "nameWeight": "400", "kindColor": "#9ca3af", "kindLabel": "text?"}, {"name": "created_at", "nameColor": "#3d4552", "nameWeight": "400", "kindColor": "#1d4ed8", "kindLabel": "datetime"}]}, {"id": "billing.invoices", "label": "billing.Invoice", "schema": "billing", "headerColor": "#059669", "hoverColor": "#4a1d5e", "fields": [{"name": "id", "nameColor": "#5C2472", "nameWeight": "700", "kindColor": "#5C2472", "kindLabel": "PK"}, {"name": "user_id", "nameColor": "#9a3412", "nameWeight": "400", "kindColor": "#c2410c", "kindLabel": "FK"}, {"name": "total", "nameColor": "#3d4552", "nameWeight": "400", "kindColor": "#6b7280", "kindLabel": "numeric"}, {"name": "issued_at", "nameColor": "#3d4552", "nameWeight": "400", "kindColor": "#1d4ed8", "kindLabel": "datetime"}]}, {"id": "billing.line_items", "label": "billing.LineItem", "schema": "billing", "headerColor": "#059669", "hoverColor": "#4a1d5e", "fields": [{"name": "id", "nameColor": "#5C2472", "nameWeight": "700", "kindColor": "#5C2472", "kindLabel": "PK"}, {"name": "invoice_id", "nameColor": "#9a3412", "nameWeight": "400", "kindColor": "#c2410c", "kindLabel": "FK"}, {"name": "product_id", "nameColor": "#9a3412", "nameWeight": "400", "kindColor": "#c2410c", "kindLabel": "FK"}, {"name": "quantity", "nameColor": "#3d4552", "nameWeight": "400", "kindColor": "#6b7280", "kindLabel": "int"}, {"name": "unit_price", "nameColor": "#3d4552", "nameWeight": "400", "kindColor": "#6b7280", "kindLabel": "numeric"}]}, {"id": "public.products", "label": "public.Product", "schema": "public", "headerColor": "#d97706", "hoverColor": "#4a1d5e", "fields": [{"name": "id", "nameColor": "#5C2472", "nameWeight": "700", "kindColor": "#5C2472", "kindLabel": "PK"}, {"name": "name", "nameColor": "#3d4552", "nameWeight": "400", "kindColor": "#6b7280", "kindLabel": "string"}, {"name": "price", "nameColor": "#3d4552", "nameWeight": "400", "kindColor": "#6b7280", "kindLabel": "numeric"}]}, {"id": "public.users", "label": "public.User", "schema": "public", "headerColor": "#d97706", "hoverColor": "#4a1d5e", "fields": [{"name": "id", "nameColor": "#5C2472", "nameWeight": "700", "kindColor": "#5C2472", "kindLabel": "PK"}, {"name": "username", "nameColor": "#3d4552", "nameWeight": "400", "kindColor": "#6b7280", "kindLabel": "string"}, {"name": "email", "nameColor": "#3d4552", "nameWeight": "400", "kindColor": "#6b7280", "kindLabel": "string"}]}];
+const RELATIONS = [{"from": "public.users", "to": "audit.audit_logs", "fromCard": "1", "toCard": "N"}, {"from": "public.users", "to": "billing.invoices", "fromCard": "1", "toCard": "N"}, {"from": "billing.invoices", "to": "billing.line_items", "fromCard": "1", "toCard": "N"}, {"from": "public.products", "to": "billing.line_items", "fromCard": "1", "toCard": "N"}];
+const INITIAL_POS = {"audit.audit_logs": [446.0, 60.0], "billing.invoices": [74.8, 582.3], "billing.line_items": [450.4, 747.3], "public.products": [774.4, 482.5], "public.users": [60.0, 163.2]};
+const SCHEMA_COLORS = {"audit": "#6366f1", "billing": "#059669", "public": "#d97706"};
+
+const NODE_W = 218;
+const HEADER_H = 36;
+const FIELD_H = 21;
+const PAD_ = 6;
+
+const THEME = {
+  bgColor: "#f9fafb",
+  cardBg: "#ffffff",
+  cardBorder: "#dde1e8",
+  edgeColor: "#c4cad4",
+  hiColor: "#FF8300",
+  dotColor: "#d1d5db",
+  fieldText: "#3d4552",
+  separator: "#f0f2f5",
+};
+
+// ── State ──
+let positions = JSON.parse(JSON.stringify(INITIAL_POS));
+let dragging = null;
+let hoveredId = null;
+
+const ENTITY_MAP = Object.fromEntries(ENTITIES.map(e => [e.id, e]));
+
+function nodeH(e) { return HEADER_H + PAD_ + e.fields.length * FIELD_H + PAD_; }
+
+function connPt(id, side) {
+  const [x, y] = positions[id];
+  const h = nodeH(ENTITY_MAP[id]);
+  if (side === 'top')    return [x + NODE_W/2, y];
+  if (side === 'bottom') return [x + NODE_W/2, y + h];
+  if (side === 'left')   return [x, y + h/2];
+  return [x + NODE_W, y + h/2];
+}
+
+function bestSide(fromId, toId) {
+  const [fx, fy] = positions[fromId];
+  const [tx, ty] = positions[toId];
+  const fh = nodeH(ENTITY_MAP[fromId]);
+  const th = nodeH(ENTITY_MAP[toId]);
+  const dx = (tx + NODE_W/2) - (fx + NODE_W/2);
+  const dy = (ty + th/2) - (fy + fh/2);
+  if (Math.abs(dx) > Math.abs(dy)) {
+    return dx > 0 ? ['right','left'] : ['left','right'];
+  }
+  return dy > 0 ? ['bottom','top'] : ['top','bottom'];
+}
+
+function sideVec(side, d) {
+  if (side === 'top')    return [0, -d];
+  if (side === 'bottom') return [0,  d];
+  if (side === 'left')   return [-d, 0];
+  return [d, 0];
+}
+
+function makePath(fp, fs, tp, ts) {
+  const D = 70;
+  const o1 = sideVec(fs, D), o2 = sideVec(ts, D);
+  return `M ${fp[0]} ${fp[1]} C ${fp[0]+o1[0]} ${fp[1]+o1[1]} ${tp[0]+o2[0]} ${tp[1]+o2[1]} ${tp[0]} ${tp[1]}`;
+}
+
+function labelPos(pt, side) {
+  const a = sideVec(side, 20);
+  const p = (side==='top'||side==='bottom') ? [13,0] : [0,-12];
+  return [pt[0]+a[0]+p[0], pt[1]+a[1]+p[1]];
+}
+
+// ── Render ──
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k,v] of Object.entries(attrs||{})) {
+    if (k === 'textContent') e.textContent = v;
+    else e.setAttribute(k, v);
+  }
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+function render() {
+  const svg = document.getElementById('erd');
+  svg.innerHTML = '';
+
+  const maxX = Math.max(980, ...ENTITIES.map(e => positions[e.id][0] + NODE_W + 60));
+  const maxY = Math.max(600, ...ENTITIES.map(e => positions[e.id][1] + nodeH(e) + 60));
+  svg.setAttribute('width', maxX);
+  svg.setAttribute('height', maxY);
+  svg.style.cursor = dragging ? 'grabbing' : 'default';
+
+  const defs = el('defs', {}, svg);
+  const pat = el('pattern', { id:'erd-dots', width:'24', height:'24', patternUnits:'userSpaceOnUse' }, defs);
+  el('circle', { cx:'1', cy:'1', r:'0.8', fill: THEME.dotColor }, pat);
+  const mk = el('marker', { id:'arr', markerWidth:'10', markerHeight:'7', refX:'9', refY:'3.5', orient:'auto' }, defs);
+  el('polygon', { points:'0 0, 10 3.5, 0 7', fill: THEME.edgeColor }, mk);
+  const mkHi = el('marker', { id:'arr-hi', markerWidth:'10', markerHeight:'7', refX:'9', refY:'3.5', orient:'auto' }, defs);
+  el('polygon', { points:'0 0, 10 3.5, 0 7', fill: THEME.hiColor }, mkHi);
+
+  el('rect', { width:'100%', height:'100%', fill: THEME.bgColor }, svg);
+  el('rect', { width:'100%', height:'100%', fill:'url(#erd-dots)' }, svg);
+
+  // Edges — tagged with data attributes for updateHighlights
+  for (const rel of RELATIONS) {
+    if (!ENTITY_MAP[rel.from] || !ENTITY_MAP[rel.to]) continue;
+    const [fs, ts] = bestSide(rel.from, rel.to);
+    const fp = connPt(rel.from, fs);
+    const tp = connPt(rel.to, ts);
+    const d = makePath(fp, fs, tp, ts);
+    const isNN = rel.fromCard === 'N' && rel.toCard === 'N';
+    const fe = ENTITY_MAP[rel.from], te = ENTITY_MAP[rel.to];
+    const isCross = fe && te && Object.keys(SCHEMA_COLORS).length > 0 &&
+      (fe.schema != null ? fe.schema : '_default') !== (te.schema != null ? te.schema : '_default');
+
+    const g = el('g', { 'data-rel-from': rel.from, 'data-rel-to': rel.to }, svg);
+    el('path', { d, fill:'none', stroke:'transparent', 'stroke-width':'18' }, g);
+    const edgeAttrs = {
+      class: 'erd-edge', d, fill:'none',
+      stroke: THEME.edgeColor, 'stroke-width': '1.5',
+      'marker-end': 'url(#arr)'
+    };
+    if (isNN) edgeAttrs['stroke-dasharray'] = '5 3';
+    else if (isCross) edgeAttrs['stroke-dasharray'] = '8 4';
+    el('path', edgeAttrs, g);
+
+    const fl = labelPos(fp, fs);
+    el('text', {
+      class: 'erd-label', x: fl[0], y: fl[1], 'font-size':'11', 'font-family':'monospace',
+      fill: THEME.edgeColor, 'text-anchor':'middle', 'dominant-baseline':'middle',
+      textContent: rel.fromCard
+    }, g);
+    const tl = labelPos(tp, ts);
+    el('text', {
+      class: 'erd-label', x: tl[0], y: tl[1], 'font-size':'11', 'font-family':'monospace',
+      fill: THEME.edgeColor, 'text-anchor':'middle', 'dominant-baseline':'middle',
+      textContent: rel.toCard
+    }, g);
+  }
+
+  // Nodes — tagged with data attributes for updateHighlights
+  for (const entity of ENTITIES) {
+    const [x, y] = positions[entity.id];
+    const h = nodeH(entity);
+
+    const g = el('g', {
+      transform: `translate(${x}, ${y})`,
+      style: 'cursor: grab',
+      'data-id': entity.id,
+    }, svg);
+
+    el('rect', { x:'3', y:'3', rx:'7', width: NODE_W, height: h, fill:'rgba(0,0,0,0.06)' }, g);
+    el('rect', {
+      class: 'erd-card', rx:'7', width: NODE_W, height: h,
+      fill: THEME.cardBg, stroke: THEME.cardBorder, 'stroke-width': '1'
+    }, g);
+    el('rect', { class: 'erd-hdr1', rx:'7', width: NODE_W, height: HEADER_H, fill: entity.headerColor }, g);
+    el('rect', { class: 'erd-hdr2', y: HEADER_H - 7, width: NODE_W, height:'7', fill: entity.headerColor }, g);
+    el('text', {
+      x:'12', y: HEADER_H/2+1, 'font-size':'13', 'font-weight':'600',
+      fill:'white', 'dominant-baseline':'middle',
+      style:'letter-spacing:0.01em;',
+      textContent: entity.label
+    }, g);
+
+    for (let i = 0; i < entity.fields.length; i++) {
+      const field = entity.fields[i];
+      const fy = HEADER_H + PAD_ + i * FIELD_H + FIELD_H/2 + 1;
+      if (i > 0) {
+        const sy = HEADER_H + PAD_ + i * FIELD_H;
+        el('line', { x1:'10', y1:sy, x2:NODE_W-10, y2:sy, stroke: THEME.separator, 'stroke-width':'1' }, g);
+      }
+      el('text', {
+        x:'10', y:fy, 'font-size':'10',
+        'font-family':"'Courier New', Courier, monospace",
+        fill: field.nameColor, 'font-weight': field.nameWeight,
+        'dominant-baseline':'middle', textContent: field.name
+      }, g);
+      el('text', {
+        x: NODE_W-8, y:fy, 'font-size':'9',
+        'font-family':"'Courier New', Courier, monospace",
+        fill: field.kindColor, 'text-anchor':'end',
+        'dominant-baseline':'middle', opacity:'0.9', textContent: field.kindLabel
+      }, g);
+    }
+
+    g.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      dragging = {
+        id: entity.id,
+        startX: e.clientX, startY: e.clientY,
+        origX: positions[entity.id][0], origY: positions[entity.id][1]
+      };
+    });
+    g.addEventListener('mouseenter', () => { hoveredId = entity.id; updateHighlights(); });
+    g.addEventListener('mouseleave', () => { hoveredId = null; updateHighlights(); });
+  }
+}
+
+// Lightweight: only mutates attributes on existing DOM nodes, never destroys them.
+function updateHighlights() {
+  const svg = document.getElementById('erd');
+
+  // Update edges
+  svg.querySelectorAll('g[data-rel-from]').forEach(g => {
+    const from = g.getAttribute('data-rel-from');
+    const to = g.getAttribute('data-rel-to');
+    const hi = hoveredId && (from === hoveredId || to === hoveredId);
+    const edge = g.querySelector('.erd-edge');
+    if (edge) {
+      edge.setAttribute('stroke', hi ? THEME.hiColor : THEME.edgeColor);
+      edge.setAttribute('stroke-width', hi ? '2' : '1.5');
+      edge.setAttribute('marker-end', `url(#${hi ? 'arr-hi' : 'arr'})`);
+    }
+    g.querySelectorAll('.erd-label').forEach(lbl => {
+      lbl.setAttribute('fill', hi ? THEME.hiColor : THEME.edgeColor);
+    });
+  });
+
+  // Update nodes
+  svg.querySelectorAll('g[data-id]').forEach(g => {
+    const id = g.getAttribute('data-id');
+    const entity = ENTITY_MAP[id];
+    const isHv = hoveredId === id;
+    const isCn = hoveredId && hoveredId !== id &&
+      RELATIONS.some(r => (r.from === hoveredId && r.to === id) || (r.to === hoveredId && r.from === id));
+
+    const card = g.querySelector('.erd-card');
+    if (card) {
+      card.setAttribute('stroke', isHv ? entity.headerColor : isCn ? THEME.hiColor : THEME.cardBorder);
+      card.setAttribute('stroke-width', (isHv || isCn) ? '2' : '1');
+    }
+    const hdr1 = g.querySelector('.erd-hdr1');
+    const hdr2 = g.querySelector('.erd-hdr2');
+    const headerCol = isHv ? entity.hoverColor : entity.headerColor;
+    if (hdr1) hdr1.setAttribute('fill', headerCol);
+    if (hdr2) hdr2.setAttribute('fill', headerCol);
+  });
+}
+
+window.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const dx = e.clientX - dragging.startX;
+  const dy = e.clientY - dragging.startY;
+  positions[dragging.id] = [
+    Math.max(8, dragging.origX + dx),
+    Math.max(8, dragging.origY + dy)
+  ];
+  render();
+});
+
+window.addEventListener('pointerup', () => {
+  if (dragging) { dragging = null; render(); }
+});
+
+function resetLayout() {
+  positions = JSON.parse(JSON.stringify(INITIAL_POS));
+  hoveredId = null;
+  render();
+}
+
+function exportDiagram() {
+  const fmt = document.getElementById('exportFmt').value;
+  const svg = document.getElementById('erd');
+
+  if (fmt === 'html') {
+    const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+    downloadBlob(blob, 'erd.html');
+  } else if (fmt === 'svg') {
+    const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' });
+    downloadBlob(blob, 'erd.svg');
+  } else if (fmt === 'png') {
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const scale = 2;
+    canvas.width = parseInt(svg.getAttribute('width')) * scale;
+    canvas.height = parseInt(svg.getAttribute('height')) * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(blob => downloadBlob(blob, 'erd.png'), 'image/png');
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  }
+}
+
+function downloadBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+render();
+</script>
+</body>
+</html>
