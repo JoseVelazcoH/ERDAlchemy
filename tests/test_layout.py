@@ -1,0 +1,122 @@
+"""Tests for sqlalchemy_erd.layout — force-directed algorithm, node sizing."""
+
+from __future__ import annotations
+
+from sqlalchemy_erd.layout import (
+    force_directed_layout,
+    node_h,
+    Vec,
+    NODE_W,
+    HEADER_H,
+    FIELD_H,
+    PAD,
+)
+from sqlalchemy_erd.introspect import introspect_models, TableInfo, ColumnInfo, RelationshipInfo
+
+
+# ── Vec ──────────────────────────────────────────────────────────────────────
+
+class TestVec:
+    def test_add(self):
+        result = Vec(1, 2) + Vec(3, 4)
+        assert result.x == 4 and result.y == 6
+
+    def test_sub(self):
+        result = Vec(5, 7) - Vec(2, 3)
+        assert result.x == 3 and result.y == 4
+
+    def test_mul(self):
+        result = Vec(3, 4) * 2
+        assert result.x == 6 and result.y == 8
+
+    def test_length(self):
+        assert Vec(3, 4).length() == 5.0
+
+    def test_length_zero(self):
+        assert Vec(0, 0).length() == 0.0
+
+
+# ── node_h ───────────────────────────────────────────────────────────────────
+
+class TestNodeH:
+    def test_no_columns(self):
+        t = TableInfo(name="t", class_name="T", columns=[])
+        assert node_h(t) == HEADER_H + PAD + 0 * FIELD_H + PAD
+
+    def test_with_columns(self):
+        cols = [ColumnInfo(name=f"c{i}", kind="int", nullable=False, is_pk=False, is_fk=False) for i in range(5)]
+        t = TableInfo(name="t", class_name="T", columns=cols)
+        assert node_h(t) == HEADER_H + PAD + 5 * FIELD_H + PAD
+
+    def test_single_column(self):
+        cols = [ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False)]
+        t = TableInfo(name="t", class_name="T", columns=cols)
+        assert node_h(t) == HEADER_H + PAD + 1 * FIELD_H + PAD
+
+
+# ── force_directed_layout ────────────────────────────────────────────────────
+
+class TestForceDirectedLayout:
+    def test_empty_tables(self):
+        result = force_directed_layout([], [])
+        assert result == {}
+
+    def test_single_table(self, single_table_base):
+        tables, rels = introspect_models(single_table_base)
+        positions = force_directed_layout(tables, rels)
+        assert len(positions) == 1
+        assert "standalone" in positions
+        x, y = positions["standalone"]
+        assert x > 0 and y > 0
+
+    def test_all_tables_positioned(self, blog_base):
+        tables, rels = introspect_models(blog_base)
+        positions = force_directed_layout(tables, rels)
+        assert len(positions) == 3
+        for t in tables:
+            assert t.name in positions
+
+    def test_positions_are_positive(self, blog_base):
+        tables, rels = introspect_models(blog_base)
+        positions = force_directed_layout(tables, rels)
+        for name, (x, y) in positions.items():
+            assert x > 0, f"{name} has non-positive x"
+            assert y > 0, f"{name} has non-positive y"
+
+    def test_no_overlap(self, blog_base):
+        tables, rels = introspect_models(blog_base)
+        positions = force_directed_layout(tables, rels)
+        table_map = {t.name: t for t in tables}
+        names = list(positions.keys())
+        for i in range(len(names)):
+            for j in range(i + 1, len(names)):
+                x1, y1 = positions[names[i]]
+                x2, y2 = positions[names[j]]
+                h1 = node_h(table_map[names[i]])
+                h2 = node_h(table_map[names[j]])
+                overlap_x = x1 < x2 + NODE_W and x2 < x1 + NODE_W
+                overlap_y = y1 < y2 + h2 and y2 < y1 + h1
+                assert not (overlap_x and overlap_y), (
+                    f"Tables {names[i]} and {names[j]} overlap"
+                )
+
+    def test_deterministic_with_seed(self, blog_base):
+        tables, rels = introspect_models(blog_base)
+        pos1 = force_directed_layout(tables, rels, seed=42)
+        pos2 = force_directed_layout(tables, rels, seed=42)
+        assert pos1 == pos2
+
+    def test_different_seed_different_result(self, blog_base):
+        tables, rels = introspect_models(blog_base)
+        pos1 = force_directed_layout(tables, rels, seed=42)
+        pos2 = force_directed_layout(tables, rels, seed=99)
+        assert pos1 != pos2
+
+    def test_connected_tables_closer(self, blog_base):
+        tables, rels = introspect_models(blog_base)
+        positions = force_directed_layout(tables, rels, iterations=500)
+        ux, uy = positions["users"]
+        px, py = positions["posts"]
+        cx, cy = positions["comments"]
+        dist_users_posts = ((ux - px) ** 2 + (uy - py) ** 2) ** 0.5
+        assert dist_users_posts < 1000

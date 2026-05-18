@@ -13,7 +13,6 @@ venv/
 .mypy_cache/
 .pytest_cache/
 *.html
-!examples/**/*.html
 *.png
 !examples/**/*.png
 *.pdf

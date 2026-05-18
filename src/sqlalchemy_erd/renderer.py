@@ -34,18 +34,36 @@ def _best_side(
     return from_side, to_side
 
 
+def _col_index(table: TableInfo, col_name: str) -> int | None:
+    for i, col in enumerate(table.columns):
+        if col.name == col_name:
+            return i
+    return None
+
+
+def _first_pk_index(table: TableInfo) -> int | None:
+    for i, col in enumerate(table.columns):
+        if col.is_pk:
+            return i
+    return None
+
+
 def _conn_pt(
     pos: tuple[float, float], table: TableInfo, side: Side,
+    col_idx: int | None = None,
 ) -> tuple[float, float]:
     x, y = pos
     h = node_h(table)
-    if side == "top":
-        return x + NODE_W / 2, y
-    if side == "bottom":
-        return x + NODE_W / 2, y + h
-    if side == "left":
-        return x, y + h / 2
-    return x + NODE_W, y + h / 2
+
+    if side in ("top", "bottom"):
+        return x + NODE_W / 2, y if side == "top" else y + h
+
+    if col_idx is not None:
+        cy = y + HEADER_H + PAD + col_idx * FIELD_H + FIELD_H // 2
+    else:
+        cy = y + h / 2
+    return (x, cy) if side == "left" else (x + NODE_W, cy)
+
 
 
 def _side_vec(side: Side, d: float) -> tuple[float, float]:
@@ -89,10 +107,10 @@ def render_svg(
 ) -> str:
     table_map = {t.name: t for t in tables}
 
-    max_x = max((positions[t.name][0] + NODE_W + 60 for t in tables), default=980)
-    max_y = max((positions[t.name][1] + node_h(t) + 60 for t in tables), default=600)
-    svg_w = max(980, max_x)
-    svg_h = max(600, max_y)
+    max_x = max((positions[t.name][0] + NODE_W + 60 for t in tables), default=400)
+    max_y = max((positions[t.name][1] + node_h(t) + 60 for t in tables), default=300)
+    svg_w = max_x
+    svg_h = max_y
 
     parts: list[str] = []
 
@@ -119,6 +137,8 @@ def render_svg(
     parts.append(f'  <rect width="100%" height="100%" fill="{theme.bg_color}" />')
     parts.append(f'  <rect width="100%" height="100%" fill="url(#erd-dots)" />')
 
+    multi_schema = bool(theme.schema_colors)
+
     for rel in relationships:
         if rel.from_table not in table_map or rel.to_table not in table_map:
             continue
@@ -126,12 +146,41 @@ def render_svg(
         tt = table_map[rel.to_table]
         fp = positions[rel.from_table]
         tp = positions[rel.to_table]
-        fs, ts = _best_side(fp, ft, tp, tt)
-        fpt = _conn_pt(fp, ft, fs)
-        tpt = _conn_pt(tp, tt, ts)
+
+        is_via = rel.fk_column.startswith("via ")
+        from_idx = _first_pk_index(ft) if not is_via else None
+        to_idx = _col_index(tt, rel.fk_column) if not is_via else None
+
+        if is_via:
+            fs, ts = _best_side(fp, ft, tp, tt)
+            fpt = _conn_pt(fp, ft, fs)
+            tpt = _conn_pt(tp, tt, ts)
+        else:
+            fx, fy = fp
+            tx, ty = tp
+            dx = (tx + NODE_W / 2) - (fx + NODE_W / 2)
+            dy = (ty + node_h(tt) / 2) - (fy + node_h(ft) / 2)
+            if abs(dx) > abs(dy):
+                fs = "right" if dx > 0 else "left"
+                ts = "left" if dx > 0 else "right"
+            else:
+                side = "right" if dx >= 0 else "left"
+                fs = ts = side
+            fpt = _conn_pt(fp, ft, fs, from_idx)
+            tpt = _conn_pt(tp, tt, ts, to_idx)
+
         path_d = _make_path(fpt, fs, tpt, ts)
         is_nn = rel.from_card == "N" and rel.to_card == "N"
-        dash = ' stroke-dasharray="5 3"' if is_nn else ""
+        is_cross = multi_schema and (
+            table_map.get(rel.from_table, tables[0]).schema
+            != table_map.get(rel.to_table, tables[0]).schema
+        )
+        if is_nn:
+            dash = ' stroke-dasharray="5 3"'
+        elif is_cross:
+            dash = ' stroke-dasharray="8 4"'
+        else:
+            dash = ""
 
         fl = _label_pos(fpt, fs)
         tl = _label_pos(tpt, ts)

@@ -11,7 +11,7 @@ from sqlalchemy import MetaData
 
 from sqlalchemy_erd.introspect import introspect_models
 from sqlalchemy_erd.layout import force_directed_layout
-from sqlalchemy_erd.theme import get_theme, THEMES
+from sqlalchemy_erd.theme import get_theme, apply_schema_colors, THEMES
 from sqlalchemy_erd.export import to_svg, to_html, to_png, to_pdf
 
 
@@ -87,11 +87,32 @@ def main(argv: list[str] | None = None) -> None:
         default="ERD",
         help="Title for HTML output (default: ERD)",
     )
+    parser.add_argument(
+        "--schemas",
+        help="Comma-separated list of database schemas to include (e.g., public,billing,audit)",
+    )
+    parser.add_argument(
+        "--k-repulse", type=float, default=35000.0,
+        help="Repulsion strength between all nodes (default: 35000)",
+    )
+    parser.add_argument(
+        "--k-attract", type=float, default=0.1,
+        help="Attraction strength between connected nodes (default: 0.1)",
+    )
+    parser.add_argument(
+        "--k-align", type=float, default=0.02,
+        help="Horizontal-alignment force for connected nodes (default: 0.02)",
+    )
+    parser.add_argument(
+        "--ideal-len", type=float, default=280.0,
+        help="Target edge length in pixels between connected nodes (default: 280)",
+    )
 
     args = parser.parse_args(argv)
 
     target = _resolve_target(args.target)
-    tables, relationships = introspect_models(target)
+    schemas_list = [s.strip() for s in args.schemas.split(",") if s.strip()] if args.schemas else None
+    tables, relationships = introspect_models(target, schemas=schemas_list)
 
     if not tables:
         print("No tables found.", file=sys.stderr)
@@ -99,7 +120,12 @@ def main(argv: list[str] | None = None) -> None:
 
     table_colors = json.loads(args.colors) if args.colors else None
     theme = get_theme(args.theme, table_colors)
-    positions = force_directed_layout(tables, relationships)
+    apply_schema_colors(theme, tables)
+    positions = force_directed_layout(
+        tables, relationships,
+        k_repulse=args.k_repulse, k_attract=args.k_attract,
+        k_align=args.k_align, ideal_len=args.ideal_len,
+    )
 
     output_path = args.output or f"erd.{args.format}"
 
