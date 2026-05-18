@@ -34,18 +34,36 @@ def _best_side(
     return from_side, to_side
 
 
+def _col_index(table: TableInfo, col_name: str) -> int | None:
+    for i, col in enumerate(table.columns):
+        if col.name == col_name:
+            return i
+    return None
+
+
+def _first_pk_index(table: TableInfo) -> int | None:
+    for i, col in enumerate(table.columns):
+        if col.is_pk:
+            return i
+    return None
+
+
 def _conn_pt(
     pos: tuple[float, float], table: TableInfo, side: Side,
+    col_idx: int | None = None,
 ) -> tuple[float, float]:
     x, y = pos
     h = node_h(table)
-    if side == "top":
-        return x + NODE_W / 2, y
-    if side == "bottom":
-        return x + NODE_W / 2, y + h
-    if side == "left":
-        return x, y + h / 2
-    return x + NODE_W, y + h / 2
+
+    if side in ("top", "bottom"):
+        return x + NODE_W / 2, y if side == "top" else y + h
+
+    if col_idx is not None:
+        cy = y + HEADER_H + PAD + col_idx * FIELD_H + FIELD_H // 2
+    else:
+        cy = y + h / 2
+    return (x, cy) if side == "left" else (x + NODE_W, cy)
+
 
 
 def _side_vec(side: Side, d: float) -> tuple[float, float]:
@@ -70,17 +88,6 @@ def _make_path(
     return f"M {fp[0]} {fp[1]} C {c1x} {c1y} {c2x} {c2y} {tp[0]} {tp[1]}"
 
 
-def _offset_parallel(
-    fp: tuple[float, float],
-    tp: tuple[float, float],
-    side: Side,
-    shift: float,
-) -> tuple[tuple[float, float], tuple[float, float]]:
-    if side in ("left", "right"):
-        return (fp[0], fp[1] + shift), (tp[0], tp[1] + shift)
-    return (fp[0] + shift, fp[1]), (tp[0] + shift, tp[1])
-
-
 def _label_pos(pt: tuple[float, float], side: Side) -> tuple[float, float]:
     ax, ay = _side_vec(side, 20)
     if side in ("top", "bottom"):
@@ -100,10 +107,10 @@ def render_svg(
 ) -> str:
     table_map = {t.name: t for t in tables}
 
-    max_x = max((positions[t.name][0] + NODE_W + 60 for t in tables), default=980)
-    max_y = max((positions[t.name][1] + node_h(t) + 60 for t in tables), default=600)
-    svg_w = max(980, max_x)
-    svg_h = max(600, max_y)
+    max_x = max((positions[t.name][0] + NODE_W + 60 for t in tables), default=400)
+    max_y = max((positions[t.name][1] + node_h(t) + 60 for t in tables), default=300)
+    svg_w = max_x
+    svg_h = max_y
 
     parts: list[str] = []
 
@@ -132,12 +139,6 @@ def render_svg(
 
     multi_schema = bool(theme.schema_colors)
 
-    pair_counts: dict[tuple[str, str], int] = {}
-    pair_index: dict[tuple[str, str], int] = {}
-    for rel in relationships:
-        key = (min(rel.from_table, rel.to_table), max(rel.from_table, rel.to_table))
-        pair_counts[key] = pair_counts.get(key, 0) + 1
-
     for rel in relationships:
         if rel.from_table not in table_map or rel.to_table not in table_map:
             continue
@@ -145,18 +146,28 @@ def render_svg(
         tt = table_map[rel.to_table]
         fp = positions[rel.from_table]
         tp = positions[rel.to_table]
-        fs, ts = _best_side(fp, ft, tp, tt)
-        fpt = _conn_pt(fp, ft, fs)
-        tpt = _conn_pt(tp, tt, ts)
 
-        key = (min(rel.from_table, rel.to_table), max(rel.from_table, rel.to_table))
-        total = pair_counts[key]
-        idx = pair_index.get(key, 0)
-        pair_index[key] = idx + 1
-        if total > 1:
-            spread = 20
-            shift = (idx - (total - 1) / 2) * spread
-            fpt, tpt = _offset_parallel(fpt, tpt, fs, shift)
+        is_via = rel.fk_column.startswith("via ")
+        from_idx = _first_pk_index(ft) if not is_via else None
+        to_idx = _col_index(tt, rel.fk_column) if not is_via else None
+
+        if is_via:
+            fs, ts = _best_side(fp, ft, tp, tt)
+            fpt = _conn_pt(fp, ft, fs)
+            tpt = _conn_pt(tp, tt, ts)
+        else:
+            fx, fy = fp
+            tx, ty = tp
+            dx = (tx + NODE_W / 2) - (fx + NODE_W / 2)
+            dy = (ty + node_h(tt) / 2) - (fy + node_h(ft) / 2)
+            if abs(dx) > abs(dy):
+                fs = "right" if dx > 0 else "left"
+                ts = "left" if dx > 0 else "right"
+            else:
+                side = "right" if dx >= 0 else "left"
+                fs = ts = side
+            fpt = _conn_pt(fp, ft, fs, from_idx)
+            tpt = _conn_pt(tp, tt, ts, to_idx)
 
         path_d = _make_path(fpt, fs, tpt, ts)
         is_nn = rel.from_card == "N" and rel.to_card == "N"

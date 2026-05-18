@@ -91,6 +91,22 @@ def main(argv: list[str] | None = None) -> None:
         "--schemas",
         help="Comma-separated list of database schemas to include (e.g., public,billing,audit)",
     )
+    parser.add_argument(
+        "--k-repulse", type=float, default=35000.0,
+        help="Repulsion strength between all nodes (default: 35000)",
+    )
+    parser.add_argument(
+        "--k-attract", type=float, default=0.1,
+        help="Attraction strength between connected nodes (default: 0.1)",
+    )
+    parser.add_argument(
+        "--k-align", type=float, default=0.02,
+        help="Horizontal-alignment force for connected nodes (default: 0.02)",
+    )
+    parser.add_argument(
+        "--ideal-len", type=float, default=280.0,
+        help="Target edge length in pixels between connected nodes (default: 280)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -105,7 +121,11 @@ def main(argv: list[str] | None = None) -> None:
     table_colors = json.loads(args.colors) if args.colors else None
     theme = get_theme(args.theme, table_colors)
     apply_schema_colors(theme, tables)
-    positions = force_directed_layout(tables, relationships)
+    positions = force_directed_layout(
+        tables, relationships,
+        k_repulse=args.k_repulse, k_attract=args.k_attract,
+        k_align=args.k_align, ideal_len=args.ideal_len,
+    )
 
     output_path = args.output or f"erd.{args.format}"
 

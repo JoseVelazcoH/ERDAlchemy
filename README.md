@@ -53,6 +53,9 @@ sqlalchemy-erd myapp.models:Base --format png --scale 3
 
 # Only include specific database schemas
 sqlalchemy-erd myapp.models:Base --schemas public,billing,audit
+
+# Tune layout parameters
+sqlalchemy-erd myapp.models:Base --k-repulse 50000 --k-attract 0.05 --ideal-len 350
 ```
 
 ## Python API
@@ -68,6 +71,9 @@ generate_erd(Base, output="erd.pdf",  format="pdf")             # requires cairo
 
 # Only include specific database schemas
 generate_erd(Base, output="erd.html", schemas=["public", "billing", "audit"])
+
+# Tune layout parameters
+generate_erd(Base, output="erd.html", k_repulse=50000, k_attract=0.05, ideal_len=350)
 ```
 
 ## Themes
@@ -93,6 +99,17 @@ generate_erd(
     },
 )
 ```
+
+## Layout tuning
+
+The force-directed layout can be customized via four parameters:
+
+| Parameter | Default | Description |
+|---|---|---|
+| `k_repulse` | `35000` | Repulsion strength between all nodes. Increase to spread tables further apart. |
+| `k_attract` | `0.1` | Attraction strength between connected nodes. Higher values pull FK-related tables closer. |
+| `k_align` | `0.02` | Horizontal-alignment force. Pushes connected tables to the same Y, favoring side-by-side placement. |
+| `ideal_len` | `280` | Target edge length (px) between connected tables. |
 
 ## Supported column types
 
