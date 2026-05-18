@@ -49,6 +49,9 @@ def force_directed_layout(
     table_map = {t.name: t for t in tables}
     n = len(table_names)
 
+    schema_of = [t.schema for t in tables]
+    multi_schema = len(set(schema_of)) > 1
+
     edges: list[tuple[int, int]] = []
     name_to_idx = {name: i for i, name in enumerate(table_names)}
     for rel in relationships:
@@ -71,7 +74,8 @@ def force_directed_layout(
             for j in range(i + 1, n):
                 delta = pos[i] - pos[j]
                 dist = max(delta.length(), 1.0)
-                repulse = k_repulse / (dist * dist)
+                strength = k_repulse * 1.4 if multi_schema and schema_of[i] != schema_of[j] else k_repulse
+                repulse = strength / (dist * dist)
                 f = Vec(delta.x / dist * repulse, delta.y / dist * repulse)
                 forces[i] = forces[i] + f
                 forces[j] = forces[j] - f

@@ -7,6 +7,7 @@ Interactive ERD visualizer for SQLAlchemy 2.0 models. Introspects your `Declarat
 - Hover highlighting for tables and relationships
 - Export to HTML, SVG, PNG, and PDF
 - Built-in color themes and per-table color overrides
+- Multi-schema support with visual grouping and cross-schema FKs
 - Zero dependencies beyond SQLAlchemy
 
 ![preview](https://raw.githubusercontent.com/JoseVelazcoH/ERDAlchemy/main/examples/blog/blog.png)
@@ -49,6 +50,9 @@ sqlalchemy-erd myapp.models:Base --colors '{"users": "#1d4ed8", "orders": "#0596
 
 # High-resolution PNG
 sqlalchemy-erd myapp.models:Base --format png --scale 3
+
+# Only include specific database schemas
+sqlalchemy-erd myapp.models:Base --schemas public,billing,audit
 ```
 
 ## Python API
@@ -61,6 +65,9 @@ generate_erd(Base, output="erd.html", format="html")
 generate_erd(Base, output="erd.svg",  format="svg")
 generate_erd(Base, output="erd.png",  format="png", scale=2)   # requires cairosvg
 generate_erd(Base, output="erd.pdf",  format="pdf")             # requires cairosvg
+
+# Only include specific database schemas
+generate_erd(Base, output="erd.html", schemas=["public", "billing", "audit"])
 ```
 
 ## Themes
@@ -111,6 +118,7 @@ Nullable columns display a `?` suffix (e.g. `text?`, `date?`).
 |---|---|
 | 1:N | Solid with arrow |
 | N:N | Dashed with arrow |
+| Cross-schema FK | Dashed with longer gaps |
 
 ## Examples
 
@@ -120,6 +128,7 @@ See the [`examples/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examp
 - [`examples/ecommerce/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/ecommerce) - 1:N chains (Category, Product, Order, Customer, OrderItem)
 - [`examples/university/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/university) - N:N via association tables (Student, Course, Professor, Department)
 - [`examples/hr/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/hr) - 1:1 and 1:N (Employee, EmployeeProfile, Department, Project)
+- [`examples/multi_schema/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/multi_schema) - multi-schema with cross-schema FKs (public, billing, audit)
 
 ## License
 
