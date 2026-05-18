@@ -70,6 +70,17 @@ def _make_path(
     return f"M {fp[0]} {fp[1]} C {c1x} {c1y} {c2x} {c2y} {tp[0]} {tp[1]}"
 
 
+def _offset_parallel(
+    fp: tuple[float, float],
+    tp: tuple[float, float],
+    side: Side,
+    shift: float,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    if side in ("left", "right"):
+        return (fp[0], fp[1] + shift), (tp[0], tp[1] + shift)
+    return (fp[0] + shift, fp[1]), (tp[0] + shift, tp[1])
+
+
 def _label_pos(pt: tuple[float, float], side: Side) -> tuple[float, float]:
     ax, ay = _side_vec(side, 20)
     if side in ("top", "bottom"):
@@ -121,6 +132,12 @@ def render_svg(
 
     multi_schema = bool(theme.schema_colors)
 
+    pair_counts: dict[tuple[str, str], int] = {}
+    pair_index: dict[tuple[str, str], int] = {}
+    for rel in relationships:
+        key = (min(rel.from_table, rel.to_table), max(rel.from_table, rel.to_table))
+        pair_counts[key] = pair_counts.get(key, 0) + 1
+
     for rel in relationships:
         if rel.from_table not in table_map or rel.to_table not in table_map:
             continue
@@ -131,6 +148,16 @@ def render_svg(
         fs, ts = _best_side(fp, ft, tp, tt)
         fpt = _conn_pt(fp, ft, fs)
         tpt = _conn_pt(tp, tt, ts)
+
+        key = (min(rel.from_table, rel.to_table), max(rel.from_table, rel.to_table))
+        total = pair_counts[key]
+        idx = pair_index.get(key, 0)
+        pair_index[key] = idx + 1
+        if total > 1:
+            spread = 20
+            shift = (idx - (total - 1) / 2) * spread
+            fpt, tpt = _offset_parallel(fpt, tpt, fs, shift)
+
         path_d = _make_path(fpt, fs, tpt, ts)
         is_nn = rel.from_card == "N" and rel.to_card == "N"
         is_cross = multi_schema and (

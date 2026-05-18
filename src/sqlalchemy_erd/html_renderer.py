@@ -145,6 +145,13 @@ function labelPos(pt, side) {{
   return [pt[0]+a[0]+p[0], pt[1]+a[1]+p[1]];
 }}
 
+function offsetParallel(fp, tp, side, shift) {{
+  if (side === 'left' || side === 'right') {{
+    return [[fp[0], fp[1]+shift], [tp[0], tp[1]+shift]];
+  }}
+  return [[fp[0]+shift, fp[1]], [tp[0]+shift, tp[1]]];
+}}
+
 // ── Render ──
 const NS = 'http://www.w3.org/2000/svg';
 function el(tag, attrs, parent) {{
@@ -179,11 +186,25 @@ function render() {{
   el('rect', {{ width:'100%', height:'100%', fill:'url(#erd-dots)' }}, svg);
 
   // Edges — tagged with data attributes for updateHighlights
+  const pairCounts = {{}};
+  const pairIdx = {{}};
+  for (const rel of RELATIONS) {{
+    const k = [rel.from, rel.to].sort().join('|');
+    pairCounts[k] = (pairCounts[k] || 0) + 1;
+  }}
   for (const rel of RELATIONS) {{
     if (!ENTITY_MAP[rel.from] || !ENTITY_MAP[rel.to]) continue;
     const [fs, ts] = bestSide(rel.from, rel.to);
-    const fp = connPt(rel.from, fs);
-    const tp = connPt(rel.to, ts);
+    let fp = connPt(rel.from, fs);
+    let tp = connPt(rel.to, ts);
+    const k = [rel.from, rel.to].sort().join('|');
+    const total = pairCounts[k];
+    const idx = pairIdx[k] || 0;
+    pairIdx[k] = idx + 1;
+    if (total > 1) {{
+      const shift = (idx - (total - 1) / 2) * 20;
+      [fp, tp] = offsetParallel(fp, tp, fs, shift);
+    }}
     const d = makePath(fp, fs, tp, ts);
     const isNN = rel.fromCard === 'N' && rel.toCard === 'N';
     const fe = ENTITY_MAP[rel.from], te = ENTITY_MAP[rel.to];
