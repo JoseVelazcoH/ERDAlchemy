@@ -57,6 +57,7 @@ class Theme:
     kind_colors: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_KIND_COLORS))
     kind_labels: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_KIND_LABELS))
     table_colors: dict[str, str] = field(default_factory=dict)
+    schema_colors: dict[str | None, str] = field(default_factory=dict)
 
     def get_header_color(self, table_name: str) -> str:
         return self.table_colors.get(table_name, self.header_color)
@@ -96,6 +97,33 @@ THEMES: dict[str, Theme] = {
         highlight_color="#2563eb",
     ),
 }
+
+
+SCHEMA_PALETTE = [
+    "#6366f1",
+    "#059669",
+    "#d97706",
+    "#dc2626",
+    "#7c3aed",
+    "#0891b2",
+    "#be185d",
+    "#65a30d",
+]
+
+
+def apply_schema_colors(theme: Theme, tables: list) -> None:
+    schemas_present = sorted(
+        {t.schema for t in tables},
+        key=lambda x: (x is None, x or ""),
+    )
+    if len(schemas_present) <= 1:
+        return
+    for i, schema in enumerate(schemas_present):
+        color = SCHEMA_PALETTE[i % len(SCHEMA_PALETTE)]
+        theme.schema_colors[schema] = color
+    for t in tables:
+        if t.name not in theme.table_colors:
+            theme.table_colors[t.name] = theme.schema_colors[t.schema]
 
 
 def get_theme(name_or_theme: str | Theme, table_colors: dict[str, str] | None = None) -> Theme:
