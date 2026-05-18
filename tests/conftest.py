@@ -194,3 +194,55 @@ Table(
 @pytest.fixture
 def multi_schema_metadata_fixture():
     return multi_schema_metadata
+
+
+# ── M:N with payload columns ─────────────────────────────────────────────────
+
+m2m_payload_metadata = MetaData()
+
+Table(
+    "students", m2m_payload_metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(100)),
+)
+
+Table(
+    "courses", m2m_payload_metadata,
+    Column("id", Integer, primary_key=True),
+    Column("title", String(200)),
+)
+
+Table(
+    "student_courses", m2m_payload_metadata,
+    Column("student_id", Integer, ForeignKey("students.id"), primary_key=True),
+    Column("course_id", Integer, ForeignKey("courses.id"), primary_key=True),
+    Column("grade", Float),
+    Column("enrolled", Date),
+)
+
+
+@pytest.fixture
+def m2m_payload_metadata_fixture():
+    return m2m_payload_metadata
+
+
+# ── Compound PK FKs to same parent ──────────────────────────────────────────
+
+same_parent_metadata = MetaData()
+
+Table(
+    "orders", same_parent_metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(100)),
+)
+
+Table(
+    "order_pairs", same_parent_metadata,
+    Column("order_a_id", Integer, ForeignKey("orders.id"), primary_key=True),
+    Column("order_b_id", Integer, ForeignKey("orders.id"), primary_key=True),
+)
+
+
+@pytest.fixture
+def same_parent_metadata_fixture():
+    return same_parent_metadata

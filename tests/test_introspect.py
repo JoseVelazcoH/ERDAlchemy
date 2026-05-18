@@ -188,6 +188,42 @@ class TestIntrospectAssociation:
         assert pair == {"students", "courses"}
 
 
+# ── association tables with payload columns ──────────────────────────────────
+
+class TestIntrospectAssociationPayload:
+    def test_payload_table_removed(self, m2m_payload_metadata_fixture):
+        tables, _ = introspect_models(m2m_payload_metadata_fixture)
+        names = {t.name for t in tables}
+        assert "student_courses" not in names
+
+    def test_payload_m2m_relationship(self, m2m_payload_metadata_fixture):
+        _, rels = introspect_models(m2m_payload_metadata_fixture)
+        assert len(rels) == 1
+        rel = rels[0]
+        assert rel.from_card == "N"
+        assert rel.to_card == "N"
+
+    def test_payload_connects_correct_tables(self, m2m_payload_metadata_fixture):
+        _, rels = introspect_models(m2m_payload_metadata_fixture)
+        rel = rels[0]
+        pair = {rel.from_table, rel.to_table}
+        assert pair == {"students", "courses"}
+
+
+# ── compound PK FKs to same parent ──────────────────────────────────────────
+
+class TestIntrospectSameParentFKs:
+    def test_same_parent_not_collapsed(self, same_parent_metadata_fixture):
+        tables, _ = introspect_models(same_parent_metadata_fixture)
+        names = {t.name for t in tables}
+        assert "order_pairs" in names
+
+    def test_same_parent_keeps_1n_rels(self, same_parent_metadata_fixture):
+        _, rels = introspect_models(same_parent_metadata_fixture)
+        for rel in rels:
+            assert not (rel.from_card == "N" and rel.to_card == "N")
+
+
 # ── introspect_models — circular FKs ─────────────────────────────────────────
 
 class TestIntrospectCircular:
