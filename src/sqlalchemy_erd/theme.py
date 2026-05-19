@@ -16,9 +16,14 @@ DEFAULT_KIND_COLORS: dict[str, str] = {
     "text": "#9ca3af",
     "date": "#1d4ed8",
     "datetime": "#1d4ed8",
+    "time": "#1d4ed8",
     "json": "#92400e",
     "bool": "#047857",
     "uuid": "#7c3aed",
+    "enum": "#0e7490",
+    "array": "#b45309",
+    "interval": "#1d4ed8",
+    "binary": "#6b7280",
     "other": "#9ca3af",
 }
 
@@ -34,9 +39,14 @@ DEFAULT_KIND_LABELS: dict[str, str] = {
     "text": "text",
     "date": "date",
     "datetime": "datetime",
+    "time": "time",
     "json": "json",
     "bool": "bool",
     "uuid": "uuid",
+    "enum": "enum",
+    "array": "array",
+    "interval": "interval",
+    "binary": "binary",
     "other": "other",
 }
 

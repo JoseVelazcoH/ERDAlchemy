@@ -6,9 +6,11 @@ from typing import Any
 from sqlalchemy import inspect, MetaData
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import (
-    Boolean, Date, DateTime, Float, Integer, BigInteger, SmallInteger,
-    JSON, Numeric, String, Text, Uuid,
+    ARRAY, Boolean, Date, DateTime, Enum, Float, Integer, BigInteger,
+    Interval, JSON, LargeBinary, Numeric, SmallInteger, String, Text,
+    Time, Uuid,
 )
+from sqlalchemy.types import TypeDecorator
 
 
 @dataclass
@@ -41,15 +43,20 @@ _TYPE_MAP: list[tuple[type, str]] = [
     (BigInteger, "bigint"),
     (SmallInteger, "smallint"),
     (Integer, "int"),
+    (Enum, "enum"),
     (Text, "text"),
     (String, "string"),
     (Float, "float"),
     (Numeric, "numeric"),
+    (Interval, "interval"),
     (DateTime, "datetime"),
     (Date, "date"),
+    (Time, "time"),
     (Boolean, "bool"),
     (JSON, "json"),
     (Uuid, "uuid"),
+    (ARRAY, "array"),
+    (LargeBinary, "binary"),
 ]
 
 
@@ -57,6 +64,8 @@ def _classify_type(sa_type: Any) -> str:
     for cls, label in _TYPE_MAP:
         if isinstance(sa_type, cls):
             return label
+    if isinstance(sa_type, TypeDecorator):
+        return _classify_type(sa_type.impl)
     return "other"
 
 

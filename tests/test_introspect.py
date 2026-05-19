@@ -10,8 +10,11 @@ from sqlalchemy_erd.introspect import (
     TableInfo,
     RelationshipInfo,
 )
-from sqlalchemy import Integer, String, Text, Float, Boolean, JSON, DateTime, Date
-from sqlalchemy import BigInteger, SmallInteger, Numeric, Uuid
+from sqlalchemy import (
+    ARRAY, Integer, String, Text, Float, Boolean, Enum, JSON, DateTime, Date,
+    Time, BigInteger, SmallInteger, Numeric, Uuid, Interval, LargeBinary,
+)
+from sqlalchemy.types import TypeDecorator
 
 
 # ── _classify_type ───────────────────────────────────────────────────────────
@@ -52,6 +55,27 @@ class TestClassifyType:
 
     def test_uuid(self):
         assert _classify_type(Uuid()) == "uuid"
+
+    def test_enum(self):
+        assert _classify_type(Enum("a", "b", "c")) == "enum"
+
+    def test_array(self):
+        assert _classify_type(ARRAY(Integer)) == "array"
+
+    def test_interval(self):
+        assert _classify_type(Interval()) == "interval"
+
+    def test_large_binary(self):
+        assert _classify_type(LargeBinary()) == "binary"
+
+    def test_time(self):
+        assert _classify_type(Time()) == "time"
+
+    def test_type_decorator_resolves_impl(self):
+        class MyType(TypeDecorator):
+            impl = String
+            cache_ok = True
+        assert _classify_type(MyType()) == "string"
 
     def test_unknown_type(self):
         class CustomType:
@@ -279,8 +303,12 @@ class TestIntrospectColumnTypes:
         assert kinds["string_col"] == "string"
         assert kinds["date_col"] == "date"
         assert kinds["datetime_col"] == "datetime"
+        assert kinds["time_col"] == "time"
         assert kinds["bool_col"] == "bool"
         assert kinds["json_col"] == "json"
+        assert kinds["enum_col"] == "enum"
+        assert kinds["interval_col"] == "interval"
+        assert kinds["binary_col"] == "binary"
 
 
 # ── introspect_models — MetaData input ───────────────────────────────────────

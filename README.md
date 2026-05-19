@@ -154,9 +154,15 @@ The force-directed layout (`layout="force"`) can be customized via four paramete
 | `Float` / `Numeric` | `float` / `numeric` |
 | `Date` | `date` |
 | `DateTime` | `datetime` |
+| `Time` | `time` |
 | `Boolean` | `bool` |
-| `JSON` | `json` |
+| `JSON` / `JSONB` | `json` |
 | `Uuid` | `uuid` |
+| `Enum` | `enum` |
+| `ARRAY` | `array` |
+| `Interval` | `interval` |
+| `LargeBinary` | `binary` |
+| `TypeDecorator` | resolves to underlying `impl` type |
 
 Nullable columns display a `?` suffix (e.g. `text?`, `date?`).
 
