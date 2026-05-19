@@ -1,9 +1,10 @@
-"""Tests for sqlalchemy_erd.layout — force-directed algorithm, node sizing."""
+"""Tests for sqlalchemy_erd.layout — force-directed algorithm, star layout, node sizing."""
 
 from __future__ import annotations
 
 from sqlalchemy_erd.layout import (
     force_directed_layout,
+    star_layout,
     node_h,
     Vec,
     NODE_W,
@@ -120,3 +121,192 @@ class TestForceDirectedLayout:
         cx, cy = positions["comments"]
         dist_users_posts = ((ux - px) ** 2 + (uy - py) ** 2) ** 0.5
         assert dist_users_posts < 1000
+
+
+# ── star_layout ─────────────────────────────────────────────────────────────
+
+class TestStarLayout:
+    def test_empty_tables(self):
+        assert star_layout([], []) == {}
+
+    def test_single_table(self, single_table_base):
+        tables, rels = introspect_models(single_table_base)
+        positions = star_layout(tables, rels)
+        assert len(positions) == 1
+        assert "standalone" in positions
+        x, y = positions["standalone"]
+        assert x > 0 and y > 0
+
+    def test_all_tables_positioned(self, blog_base):
+        tables, rels = introspect_models(blog_base)
+        positions = star_layout(tables, rels)
+        assert len(positions) == 3
+        for t in tables:
+            assert t.name in positions
+
+    def test_positions_are_positive(self, blog_base):
+        tables, rels = introspect_models(blog_base)
+        positions = star_layout(tables, rels)
+        for name, (x, y) in positions.items():
+            assert x > 0, f"{name} has non-positive x"
+            assert y > 0, f"{name} has non-positive y"
+
+    def test_deterministic(self, blog_base):
+        tables, rels = introspect_models(blog_base)
+        pos1 = star_layout(tables, rels)
+        pos2 = star_layout(tables, rels)
+        assert pos1 == pos2
+
+    def test_disconnected_grid(self):
+        tables = [
+            TableInfo(name="a", class_name="A", columns=[
+                ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+            ]),
+            TableInfo(name="b", class_name="B", columns=[
+                ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+            ]),
+            TableInfo(name="c", class_name="C", columns=[
+                ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+            ]),
+        ]
+        positions = star_layout(tables, [])
+        assert len(positions) == 3
+        xs = {x for x, _ in positions.values()}
+        assert len(xs) == 2, "3 disconnected tables should form a 2-column grid"
+
+    def test_star_fact_centered(self):
+        fact = TableInfo(name="fact", class_name="Fact", columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+            ColumnInfo(name="a_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+            ColumnInfo(name="b_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+            ColumnInfo(name="c_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+            ColumnInfo(name="d_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+        ])
+        cat = lambda name: TableInfo(name=name, class_name=name.upper(), columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+            ColumnInfo(name="name", kind="string", nullable=False, is_pk=False, is_fk=False),
+        ])
+        tables = [cat("a"), cat("b"), cat("c"), cat("d"), fact]
+        rels = [
+            RelationshipInfo(from_table="a", to_table="fact", from_card="1", to_card="N", fk_column="a_id"),
+            RelationshipInfo(from_table="b", to_table="fact", from_card="1", to_card="N", fk_column="b_id"),
+            RelationshipInfo(from_table="c", to_table="fact", from_card="1", to_card="N", fk_column="c_id"),
+            RelationshipInfo(from_table="d", to_table="fact", from_card="1", to_card="N", fk_column="d_id"),
+        ]
+
+        positions = star_layout(tables, rels)
+        fx, _ = positions["fact"]
+        left_xs = {positions["a"][0], positions["b"][0]}
+        right_xs = {positions["c"][0], positions["d"][0]}
+        assert len(left_xs) == 1, "Left catalogs should share the same x"
+        assert len(right_xs) == 1, "Right catalogs should share the same x"
+        left_x = left_xs.pop()
+        right_x = right_xs.pop()
+        assert left_x < fx < right_x, "Fact table should be between left and right catalogs"
+
+    def test_star_catalogs_ordered_by_fk_position(self):
+        fact = TableInfo(name="fact", class_name="Fact", columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+            ColumnInfo(name="z_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+            ColumnInfo(name="a_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+        ])
+        cat_z = TableInfo(name="z", class_name="Z", columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+        ])
+        cat_a = TableInfo(name="a", class_name="A", columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+        ])
+        tables = [cat_z, cat_a, fact]
+        rels = [
+            RelationshipInfo(from_table="z", to_table="fact", from_card="1", to_card="N", fk_column="z_id"),
+            RelationshipInfo(from_table="a", to_table="fact", from_card="1", to_card="N", fk_column="a_id"),
+        ]
+
+        positions = star_layout(tables, rels)
+        zx, _ = positions["z"]
+        ax, _ = positions["a"]
+        fx, _ = positions["fact"]
+        assert zx < fx, "z (first FK) should be on the left"
+        assert ax > fx, "a (second FK) should be on the right"
+
+    def test_no_overlap(self):
+        fact = TableInfo(name="fact", class_name="Fact", columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+            ColumnInfo(name="a_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+            ColumnInfo(name="b_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+            ColumnInfo(name="c_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+            ColumnInfo(name="d_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+            ColumnInfo(name="e_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+            ColumnInfo(name="f_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+        ])
+        cat = lambda name: TableInfo(name=name, class_name=name.upper(), columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+            ColumnInfo(name="name", kind="string", nullable=False, is_pk=False, is_fk=False),
+        ])
+        tables = [cat("a"), cat("b"), cat("c"), cat("d"), cat("e"), cat("f"), fact]
+        rels = [
+            RelationshipInfo(from_table=n, to_table="fact", from_card="1", to_card="N", fk_column=f"{n}_id")
+            for n in "abcdef"
+        ]
+
+        positions = star_layout(tables, rels)
+        table_map = {t.name: t for t in tables}
+        names = list(positions.keys())
+        for i in range(len(names)):
+            for j in range(i + 1, len(names)):
+                x1, y1 = positions[names[i]]
+                x2, y2 = positions[names[j]]
+                h1 = node_h(table_map[names[i]])
+                h2 = node_h(table_map[names[j]])
+                overlap_x = x1 < x2 + NODE_W and x2 < x1 + NODE_W
+                overlap_y = y1 < y2 + h2 and y2 < y1 + h1
+                assert not (overlap_x and overlap_y), (
+                    f"Tables {names[i]} and {names[j]} overlap"
+                )
+
+    def test_disconnected_below_connected(self):
+        fact = TableInfo(name="fact", class_name="Fact", columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+            ColumnInfo(name="a_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+        ])
+        cat_a = TableInfo(name="a", class_name="A", columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+        ])
+        disc = TableInfo(name="disc", class_name="Disc", columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+        ])
+        tables = [cat_a, fact, disc]
+        rels = [
+            RelationshipInfo(from_table="a", to_table="fact", from_card="1", to_card="N", fk_column="a_id"),
+        ]
+
+        positions = star_layout(tables, rels)
+        _, disc_y = positions["disc"]
+        _, fact_y = positions["fact"]
+        _, a_y = positions["a"]
+        assert disc_y > max(fact_y, a_y), "Disconnected table should be below connected tables"
+
+    def test_multi_fact_catalogs_above(self):
+        cat = TableInfo(name="cat", class_name="Cat", columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+        ])
+        fact1 = TableInfo(name="f1", class_name="F1", columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+            ColumnInfo(name="cat_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+        ])
+        fact2 = TableInfo(name="f2", class_name="F2", columns=[
+            ColumnInfo(name="id", kind="pk", nullable=False, is_pk=True, is_fk=False),
+            ColumnInfo(name="cat_id", kind="fk", nullable=False, is_pk=False, is_fk=True),
+        ])
+        tables = [cat, fact1, fact2]
+        rels = [
+            RelationshipInfo(from_table="cat", to_table="f1", from_card="1", to_card="N", fk_column="cat_id"),
+            RelationshipInfo(from_table="cat", to_table="f2", from_card="1", to_card="N", fk_column="cat_id"),
+        ]
+
+        positions = star_layout(tables, rels)
+        _, cat_y = positions["cat"]
+        _, f1_y = positions["f1"]
+        _, f2_y = positions["f2"]
+        assert cat_y < f1_y, "Catalog should be above fact tables"
+        assert cat_y < f2_y, "Catalog should be above fact tables"
