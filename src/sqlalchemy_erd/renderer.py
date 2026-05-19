@@ -14,13 +14,14 @@ def _best_side(
     from_table: TableInfo,
     to_pos: tuple[float, float],
     to_table: TableInfo,
+    node_w: int = NODE_W,
 ) -> tuple[Side, Side]:
     fx, fy = from_pos
     tx, ty = to_pos
     fh = node_h(from_table)
     th = node_h(to_table)
-    fcx, fcy = fx + NODE_W / 2, fy + fh / 2
-    tcx, tcy = tx + NODE_W / 2, ty + th / 2
+    fcx, fcy = fx + node_w / 2, fy + fh / 2
+    tcx, tcy = tx + node_w / 2, ty + th / 2
     dx = tcx - fcx
     dy = tcy - fcy
 
@@ -50,19 +51,19 @@ def _first_pk_index(table: TableInfo) -> int | None:
 
 def _conn_pt(
     pos: tuple[float, float], table: TableInfo, side: Side,
-    col_idx: int | None = None,
+    col_idx: int | None = None, node_w: int = NODE_W,
 ) -> tuple[float, float]:
     x, y = pos
     h = node_h(table)
 
     if side in ("top", "bottom"):
-        return x + NODE_W / 2, y if side == "top" else y + h
+        return x + node_w / 2, y if side == "top" else y + h
 
     if col_idx is not None:
         cy = y + HEADER_H + PAD + col_idx * FIELD_H + FIELD_H // 2
     else:
         cy = y + h / 2
-    return (x, cy) if side == "left" else (x + NODE_W, cy)
+    return (x, cy) if side == "left" else (x + node_w, cy)
 
 
 
@@ -104,10 +105,11 @@ def render_svg(
     theme: Theme,
     *,
     include_xml_header: bool = False,
+    node_w: int = NODE_W,
 ) -> str:
     table_map = {t.name: t for t in tables}
 
-    max_x = max((positions[t.name][0] + NODE_W + 60 for t in tables), default=400)
+    max_x = max((positions[t.name][0] + node_w + 60 for t in tables), default=400)
     max_y = max((positions[t.name][1] + node_h(t) + 60 for t in tables), default=300)
     svg_w = max_x
     svg_h = max_y
@@ -152,13 +154,13 @@ def render_svg(
         to_idx = _col_index(tt, rel.fk_column) if not is_via else None
 
         if is_via:
-            fs, ts = _best_side(fp, ft, tp, tt)
-            fpt = _conn_pt(fp, ft, fs)
-            tpt = _conn_pt(tp, tt, ts)
+            fs, ts = _best_side(fp, ft, tp, tt, node_w)
+            fpt = _conn_pt(fp, ft, fs, node_w=node_w)
+            tpt = _conn_pt(tp, tt, ts, node_w=node_w)
         else:
             fx, fy = fp
             tx, ty = tp
-            dx = (tx + NODE_W / 2) - (fx + NODE_W / 2)
+            dx = (tx + node_w / 2) - (fx + node_w / 2)
             dy = (ty + node_h(tt) / 2) - (fy + node_h(ft) / 2)
             if abs(dx) > abs(dy):
                 fs = "right" if dx > 0 else "left"
@@ -166,8 +168,8 @@ def render_svg(
             else:
                 side = "right" if dx >= 0 else "left"
                 fs = ts = side
-            fpt = _conn_pt(fp, ft, fs, from_idx)
-            tpt = _conn_pt(tp, tt, ts, to_idx)
+            fpt = _conn_pt(fp, ft, fs, from_idx, node_w)
+            tpt = _conn_pt(tp, tt, ts, to_idx, node_w)
 
         path_d = _make_path(fpt, fs, tpt, ts)
         is_nn = rel.from_card == "N" and rel.to_card == "N"
@@ -213,13 +215,13 @@ def render_svg(
             f'  <g class="erd-node" data-table="{table.name}" '
             f'transform="translate({x}, {y})" style="cursor: grab;">'
         )
-        parts.append(f'    <rect x="3" y="3" rx="7" width="{NODE_W}" height="{h}" fill="rgba(0,0,0,0.06)" />')
+        parts.append(f'    <rect x="3" y="3" rx="7" width="{node_w}" height="{h}" fill="rgba(0,0,0,0.06)" />')
         parts.append(
-            f'    <rect class="erd-card" rx="7" width="{NODE_W}" height="{h}" '
+            f'    <rect class="erd-card" rx="7" width="{node_w}" height="{h}" '
             f'fill="{theme.card_bg}" stroke="{theme.card_border}" stroke-width="1" />'
         )
-        parts.append(f'    <rect rx="7" width="{NODE_W}" height="{HEADER_H}" fill="{header_col}" />')
-        parts.append(f'    <rect y="{HEADER_H - 7}" width="{NODE_W}" height="7" fill="{header_col}" />')
+        parts.append(f'    <rect rx="7" width="{node_w}" height="{HEADER_H}" fill="{header_col}" />')
+        parts.append(f'    <rect y="{HEADER_H - 7}" width="{node_w}" height="7" fill="{header_col}" />')
 
         parts.append(
             f'    <text x="12" y="{HEADER_H / 2 + 1}" font-size="13" font-weight="600" '
@@ -232,7 +234,7 @@ def render_svg(
             if i > 0:
                 sep_y = HEADER_H + PAD + i * FIELD_H
                 parts.append(
-                    f'    <line x1="10" y1="{sep_y}" x2="{NODE_W - 10}" y2="{sep_y}" '
+                    f'    <line x1="10" y1="{sep_y}" x2="{node_w - 10}" y2="{sep_y}" '
                     f'stroke="{theme.separator_color}" stroke-width="1" />'
                 )
             col_color = (
@@ -253,7 +255,7 @@ def render_svg(
                 f'dominant-baseline="middle">{escape(col.name)}</text>'
             )
             parts.append(
-                f'    <text x="{NODE_W - 8}" y="{fy}" font-size="9" '
+                f'    <text x="{node_w - 8}" y="{fy}" font-size="9" '
                 f'font-family="\'Courier New\', Courier, monospace" '
                 f'fill="{kind_color}" text-anchor="end" '
                 f'dominant-baseline="middle" opacity="0.9">{escape(kind_label)}</text>'

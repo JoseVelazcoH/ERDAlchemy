@@ -14,6 +14,7 @@ def render_html(
     positions: dict[str, tuple[float, float]],
     theme: Theme,
     title: str = "ERD",
+    node_w: int = NODE_W,
 ) -> str:
     entities_js = _build_entities_json(tables, theme)
     relations_js = _build_relations_json(relationships, tables, positions)
@@ -79,7 +80,7 @@ const RELATIONS = {relations_js};
 const INITIAL_POS = {positions_js};
 const SCHEMA_COLORS = {schema_colors_js};
 
-const NODE_W = {NODE_W};
+const NODE_W = {node_w};
 const HEADER_H = {HEADER_H};
 const FIELD_H = {FIELD_H};
 const PAD_ = {PAD};
