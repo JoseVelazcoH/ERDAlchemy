@@ -28,7 +28,8 @@ class TestThemeDefaults:
 
     def test_kind_colors_complete(self):
         expected = {"pk", "fk", "int", "bigint", "smallint", "float", "numeric",
-                    "string", "text", "date", "datetime", "json", "bool", "uuid", "other"}
+                    "string", "text", "date", "datetime", "time", "json", "bool",
+                    "uuid", "enum", "array", "interval", "binary", "other"}
         assert set(DEFAULT_KIND_COLORS.keys()) == expected
 
     def test_kind_labels_complete(self):
