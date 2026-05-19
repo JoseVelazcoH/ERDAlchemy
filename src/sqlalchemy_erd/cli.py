@@ -68,9 +68,8 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "-t", "--theme",
-        choices=list(THEMES.keys()),
         default="default",
-        help="Color theme (default: default)",
+        help=f"Color theme or hex color (available: {', '.join(THEMES.keys())}, or #hex) (default: default)",
     )
     parser.add_argument(
         "--colors",
