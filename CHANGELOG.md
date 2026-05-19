@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/JoseVelazcoH/ERDAlchemy/compare/erdalchemy-v0.3.0...erdalchemy-v0.4.0) (2026-05-19)
+
+
+### Features
+
+* **layout:** add star_cols and node_width parameters ([bc03457](https://github.com/JoseVelazcoH/ERDAlchemy/commit/bc034576d565cc92b5655833f55eab46289b2015))
+* **layout:** add star_cols parameter and node_width auto-sizing ([de4e9e7](https://github.com/JoseVelazcoH/ERDAlchemy/commit/de4e9e703bcaaa90a55a6d795a80edec9e52e2f9))
+
 ## [0.3.0](https://github.com/JoseVelazcoH/ERDAlchemy/compare/erdalchemy-v0.2.0...erdalchemy-v0.3.0) (2026-05-19)
 
 
