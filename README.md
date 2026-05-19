@@ -68,6 +68,8 @@ sqlalchemy-erd myapp.models:Base --node-width auto
 
 # Fixed card width
 sqlalchemy-erd myapp.models:Base --node-width 400
+# Custom header color via hex
+sqlalchemy-erd myapp.models:Base --theme "#6d28d9"
 ```
 
 ## Python API
@@ -141,12 +143,20 @@ When there are multiple fact tables, catalogs are placed above and fact tables s
 
 ## Themes
 
-Five built-in themes: `default`, `blue`, `green`, `dark`, `rose`.
+Eight built-in themes: `default`, `blue`, `green`, `dark`, `rose`, `yellow`, `pink`, `navy`.
 
 Preview images for each theme are available in [`examples/themes/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/themes).
 
 ```python
 generate_erd(Base, theme="dark")
+generate_erd(Base, theme="pink")
+generate_erd(Base, theme="navy")
+```
+
+You can also pass a hex color string to set a custom header color:
+
+```python
+generate_erd(Base, theme="#6d28d9")
 ```
 
 Per-table color overrides let you assign any hex color to individual tables while keeping the rest of the theme intact:

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "erdalchemy"
-version = "0.1.1"
+version = "0.3.0"
 description = "Interactive ERD visualization for SQLAlchemy 2.0 models"
 readme = "README.md"
 license = "MIT"
