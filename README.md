@@ -3,7 +3,7 @@
 Interactive ERD visualizer for SQLAlchemy 2.0 models. Introspects your `DeclarativeBase` metadata and generates diagram files with no manual configuration required.
 
 - Drag-and-drop interactive HTML output
-- Auto-layout via force-directed algorithm
+- Two layout algorithms: force-directed (general) and star (optimized for star/warehouse schemas)
 - Hover highlighting for tables and relationships
 - Export to HTML, SVG, PNG, and PDF
 - Built-in color themes and per-table color overrides
@@ -56,6 +56,9 @@ sqlalchemy-erd myapp.models:Base --schemas public,billing,audit
 
 # Tune layout parameters
 sqlalchemy-erd myapp.models:Base --k-repulse 50000 --k-attract 0.05 --ideal-len 350
+
+# Use star layout for star/warehouse schemas or disconnected tables
+sqlalchemy-erd myapp.models:Base --layout star
 ```
 
 ## Python API
@@ -74,7 +77,35 @@ generate_erd(Base, output="erd.html", schemas=["public", "billing", "audit"])
 
 # Tune layout parameters
 generate_erd(Base, output="erd.html", k_repulse=50000, k_attract=0.05, ideal_len=350)
+
+# Use star layout for star/warehouse schemas or disconnected tables
+generate_erd(Base, output="erd.svg", format="svg", layout="star")
 ```
+
+## Layout algorithms
+
+### Force-directed (default)
+
+General-purpose physics-based layout. Works well for most schemas with connected tables.
+
+```python
+generate_erd(Base, output="erd.html", layout="force")
+```
+
+### Star
+
+Deterministic column-based layout optimized for star/snowflake schemas and disconnected tables. Produces clean, readable diagrams without arrow crossings for ETL/data warehouse patterns.
+
+```python
+generate_erd(Base, output="erd.html", layout="star")
+```
+
+The algorithm:
+1. **Fact tables** (most FK columns) are placed in the center
+2. **Catalog tables** (FK targets) are split into left and right columns, ordered by FK column position
+3. **Disconnected tables** (no FK edges) are arranged in a grid below
+
+When there are multiple fact tables, catalogs are placed above and fact tables side by side below.
 
 ## Themes
 
@@ -100,9 +131,9 @@ generate_erd(
 )
 ```
 
-## Layout tuning
+## Force-directed layout tuning
 
-The force-directed layout can be customized via four parameters:
+The force-directed layout (`layout="force"`) can be customized via four parameters:
 
 | Parameter | Default | Description |
 |---|---|---|
