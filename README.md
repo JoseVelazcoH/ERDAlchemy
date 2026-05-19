@@ -60,6 +60,14 @@ sqlalchemy-erd myapp.models:Base --k-repulse 50000 --k-attract 0.05 --ideal-len 
 # Use star layout for star/warehouse schemas or disconnected tables
 sqlalchemy-erd myapp.models:Base --layout star
 
+# Star layout with 2 catalog columns per side (for many catalogs)
+sqlalchemy-erd myapp.models:Base --layout star --star-cols 2
+
+# Auto-size card width to fit column names
+sqlalchemy-erd myapp.models:Base --node-width auto
+
+# Fixed card width
+sqlalchemy-erd myapp.models:Base --node-width 400
 # Custom header color via hex
 sqlalchemy-erd myapp.models:Base --theme "#6d28d9"
 ```
@@ -83,6 +91,12 @@ generate_erd(Base, output="erd.html", k_repulse=50000, k_attract=0.05, ideal_len
 
 # Use star layout for star/warehouse schemas or disconnected tables
 generate_erd(Base, output="erd.svg", format="svg", layout="star")
+
+# Auto-size card width to fit column names
+generate_erd(Base, output="erd.svg", format="svg", node_width="auto")
+
+# Fixed card width for wide column names
+generate_erd(Base, output="erd.svg", format="svg", node_width=400)
 ```
 
 ## Layout algorithms
@@ -103,9 +117,26 @@ Deterministic column-based layout optimized for star/snowflake schemas and disco
 generate_erd(Base, output="erd.html", layout="star")
 ```
 
+The `star_cols` parameter controls how many catalog columns are placed on each side of the fact table:
+
+```python
+# Auto (default): 1 per side when ≤12 catalogs, 2 per side when >12
+generate_erd(Base, output="erd.html", layout="star")
+
+# Force 2 catalog columns per side → 5 total columns
+generate_erd(Base, output="erd.html", layout="star", star_cols=2)
+```
+
+| `star_cols` | Total columns | Description |
+|---|---|---|
+| `None` (default) | Auto | 1 per side for ≤12 catalogs, 2 per side for >12 |
+| `1` | 3 | One column per side (left, center, right) |
+| `2` | 5 | Two columns per side |
+| `3` | 7 | Three columns per side |
+
 The algorithm:
 1. **Fact tables** (most FK columns) are placed in the center
-2. **Catalog tables** (FK targets) are split into left and right columns, ordered by FK column position
+2. **Catalog tables** (FK targets) are distributed across left and right columns, ordered by FK column position
 3. **Disconnected tables** (no FK edges) are arranged in a grid below
 
 When there are multiple fact tables, catalogs are placed above and fact tables side by side below.
@@ -141,6 +172,24 @@ generate_erd(
     },
 )
 ```
+
+## Card width
+
+By default, cards are 218px wide. For schemas with long column names, you can auto-size or set a fixed width:
+
+```python
+# Auto: calculates width based on the longest column name + type label
+generate_erd(Base, node_width="auto")
+
+# Fixed: set exact width in pixels
+generate_erd(Base, node_width=400)
+```
+
+| `node_width` | Behavior |
+|---|---|
+| `None` (default) | 218px (built-in default) |
+| `"auto"` | Fits the widest column name + type label across all tables |
+| `int` | Fixed width in pixels |
 
 ## Force-directed layout tuning
 

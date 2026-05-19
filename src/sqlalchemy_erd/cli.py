@@ -10,7 +10,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
 
 from sqlalchemy_erd.introspect import introspect_models
-from sqlalchemy_erd.layout import force_directed_layout, star_layout
+from sqlalchemy_erd.layout import force_directed_layout, star_layout, auto_node_width, NODE_W
 from sqlalchemy_erd.theme import get_theme, apply_schema_colors, THEMES
 from sqlalchemy_erd.export import to_svg, to_html, to_png, to_pdf
 
@@ -112,6 +112,14 @@ def main(argv: list[str] | None = None) -> None:
         "--ideal-len", type=float, default=280.0,
         help="Target edge length in pixels between connected nodes (default: 280)",
     )
+    parser.add_argument(
+        "--star-cols", type=int, default=None,
+        help="Number of catalog columns per side in star layout (default: auto)",
+    )
+    parser.add_argument(
+        "--node-width", default=None,
+        help="Card width in pixels, or 'auto' to fit column names (default: 218)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -126,28 +134,37 @@ def main(argv: list[str] | None = None) -> None:
     table_colors = json.loads(args.colors) if args.colors else None
     theme = get_theme(args.theme, table_colors)
     apply_schema_colors(theme, tables)
+
+    if args.node_width == "auto":
+        node_w = auto_node_width(tables)
+    elif args.node_width is not None:
+        node_w = int(args.node_width)
+    else:
+        node_w = NODE_W
+
     if args.layout == "star":
-        positions = star_layout(tables, relationships)
+        positions = star_layout(tables, relationships, star_cols=args.star_cols, node_w=node_w)
     else:
         positions = force_directed_layout(
             tables, relationships,
             k_repulse=args.k_repulse, k_attract=args.k_attract,
             k_align=args.k_align, ideal_len=args.ideal_len,
+            node_w=node_w,
         )
 
     output_path = args.output or f"erd.{args.format}"
 
     if args.format == "html":
-        content = to_html(tables, relationships, positions, theme, title=args.title)
+        content = to_html(tables, relationships, positions, theme, title=args.title, node_w=node_w)
         Path(output_path).write_text(content, encoding="utf-8")
     elif args.format == "svg":
-        content = to_svg(tables, relationships, positions, theme)
+        content = to_svg(tables, relationships, positions, theme, node_w=node_w)
         Path(output_path).write_text(content, encoding="utf-8")
     elif args.format == "png":
-        data = to_png(tables, relationships, positions, theme, scale=args.scale)
+        data = to_png(tables, relationships, positions, theme, scale=args.scale, node_w=node_w)
         Path(output_path).write_bytes(data)
     elif args.format == "pdf":
-        data = to_pdf(tables, relationships, positions, theme)
+        data = to_pdf(tables, relationships, positions, theme, node_w=node_w)
         Path(output_path).write_bytes(data)
 
     print(f"Generated {output_path}")
