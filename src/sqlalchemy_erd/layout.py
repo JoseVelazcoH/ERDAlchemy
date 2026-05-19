@@ -155,3 +155,194 @@ def force_directed_layout(
         result[name] = (round(pos[i].x, 1), round(pos[i].y, 1))
 
     return result
+
+
+GAP_X = 60
+GAP_Y = 40
+
+
+def _grid_layout(
+    tables: list[TableInfo],
+    margin: float,
+) -> dict[str, tuple[float, float]]:
+    n = len(tables)
+    cols = max(1, math.ceil(math.sqrt(n)))
+    rows: list[list[TableInfo]] = []
+    for i in range(0, n, cols):
+        rows.append(tables[i:i + cols])
+
+    positions: dict[str, tuple[float, float]] = {}
+    y = margin
+    for row_tables in rows:
+        max_h = max(node_h(t) for t in row_tables)
+        x = margin
+        for t in row_tables:
+            positions[t.name] = (round(x, 1), round(y, 1))
+            x += NODE_W + GAP_X
+        y += max_h + GAP_Y
+
+    return positions
+
+
+def star_layout(
+    tables: list[TableInfo],
+    relationships: list[RelationshipInfo],
+) -> dict[str, tuple[float, float]]:
+    """Deterministic column-based layout for star schemas and disconnected graphs.
+
+    Args:
+        tables: Table metadata extracted by ``introspect_models``.
+        relationships: FK / M:N edges between tables.
+
+    Returns:
+        Mapping of table name → ``(x, y)`` position.
+    """
+    if not tables:
+        return {}
+
+    table_map = {t.name: t for t in tables}
+    margin = 60.0
+
+    outgoing_count: dict[str, int] = {}
+    connected: set[str] = set()
+
+    for rel in relationships:
+        outgoing_count[rel.to_table] = outgoing_count.get(rel.to_table, 0) + 1
+        connected.add(rel.from_table)
+        connected.add(rel.to_table)
+
+    disconnected = [t for t in tables if t.name not in connected]
+
+    if not connected:
+        return _grid_layout(tables, margin)
+
+    max_out = max(outgoing_count.values())
+    fact_tables = [
+        t for t in tables
+        if outgoing_count.get(t.name, 0) == max_out and t.name in connected
+    ]
+    fact_names = {t.name for t in fact_tables}
+    catalog_tables = [
+        t for t in tables
+        if t.name in connected and t.name not in fact_names
+    ]
+
+    positions: dict[str, tuple[float, float]] = {}
+
+    if len(fact_tables) == 1:
+        positions = _single_fact_layout(
+            fact_tables[0], catalog_tables, disconnected,
+            relationships, table_map, margin,
+        )
+    else:
+        positions = _multi_fact_layout(
+            fact_tables, catalog_tables, disconnected,
+            table_map, margin,
+        )
+
+    return positions
+
+
+def _single_fact_layout(
+    fact: TableInfo,
+    catalogs: list[TableInfo],
+    disconnected: list[TableInfo],
+    relationships: list[RelationshipInfo],
+    table_map: dict[str, TableInfo],
+    margin: float,
+) -> dict[str, tuple[float, float]]:
+    fk_order: dict[str, int] = {}
+    for rel in relationships:
+        if rel.to_table == fact.name and not rel.fk_column.startswith("via "):
+            for idx, col in enumerate(fact.columns):
+                if col.name == rel.fk_column:
+                    fk_order[rel.from_table] = idx
+                    break
+
+    catalogs = sorted(catalogs, key=lambda t: fk_order.get(t.name, 999))
+
+    mid = len(catalogs) // 2
+    left = catalogs[:mid]
+    right = catalogs[mid:]
+
+    left_heights = [node_h(t) for t in left]
+    right_heights = [node_h(t) for t in right]
+    fact_height = node_h(fact)
+
+    left_total = (sum(left_heights) + GAP_Y * (len(left) - 1)) if left else 0
+    right_total = (sum(right_heights) + GAP_Y * (len(right) - 1)) if right else 0
+    max_height = max(left_total, right_total, fact_height)
+
+    left_x = margin
+    center_x = (margin + NODE_W + GAP_X) if left else margin
+    right_x = center_x + NODE_W + GAP_X
+
+    positions: dict[str, tuple[float, float]] = {}
+
+    cy = margin + (max_height - fact_height) / 2
+    positions[fact.name] = (round(center_x, 1), round(cy, 1))
+
+    ly = margin + (max_height - left_total) / 2
+    for i, t in enumerate(left):
+        positions[t.name] = (round(left_x, 1), round(ly, 1))
+        ly += left_heights[i] + GAP_Y
+
+    ry = margin + (max_height - right_total) / 2
+    for i, t in enumerate(right):
+        positions[t.name] = (round(right_x, 1), round(ry, 1))
+        ry += right_heights[i] + GAP_Y
+
+    if disconnected:
+        max_bottom = max(
+            y + node_h(table_map[name])
+            for name, (_, y) in positions.items()
+        )
+        disc_y = max_bottom + GAP_Y * 2
+        dx = margin
+        for t in disconnected:
+            positions[t.name] = (round(dx, 1), round(disc_y, 1))
+            dx += NODE_W + GAP_X
+
+    return positions
+
+
+def _multi_fact_layout(
+    fact_tables: list[TableInfo],
+    catalogs: list[TableInfo],
+    disconnected: list[TableInfo],
+    table_map: dict[str, TableInfo],
+    margin: float,
+) -> dict[str, tuple[float, float]]:
+    positions: dict[str, tuple[float, float]] = {}
+
+    x = margin
+    catalog_max_h = 0
+    for t in catalogs:
+        h = node_h(t)
+        positions[t.name] = (round(x, 1), round(margin, 1))
+        x += NODE_W + GAP_X
+        catalog_max_h = max(catalog_max_h, h)
+
+    fact_y = margin + (catalog_max_h + GAP_Y * 2 if catalogs else 0)
+    catalog_row_width = (len(catalogs) * (NODE_W + GAP_X) - GAP_X) if catalogs else 0
+    fact_row_width = len(fact_tables) * (NODE_W + GAP_X) - GAP_X
+    fx = margin + max(0, (catalog_row_width - fact_row_width) / 2)
+    fact_max_h = 0
+    for t in fact_tables:
+        h = node_h(t)
+        positions[t.name] = (round(fx, 1), round(fact_y, 1))
+        fx += NODE_W + GAP_X
+        fact_max_h = max(fact_max_h, h)
+
+    if disconnected:
+        max_bottom = max(
+            y + node_h(table_map[name])
+            for name, (_, y) in positions.items()
+        )
+        disc_y = max_bottom + GAP_Y * 2
+        dx = margin
+        for t in disconnected:
+            positions[t.name] = (round(dx, 1), round(disc_y, 1))
+            dx += NODE_W + GAP_X
+
+    return positions

@@ -16,9 +16,14 @@ DEFAULT_KIND_COLORS: dict[str, str] = {
     "text": "#9ca3af",
     "date": "#1d4ed8",
     "datetime": "#1d4ed8",
+    "time": "#1d4ed8",
     "json": "#92400e",
     "bool": "#047857",
     "uuid": "#7c3aed",
+    "enum": "#0e7490",
+    "array": "#b45309",
+    "interval": "#1d4ed8",
+    "binary": "#6b7280",
     "other": "#9ca3af",
 }
 
@@ -34,9 +39,14 @@ DEFAULT_KIND_LABELS: dict[str, str] = {
     "text": "text",
     "date": "date",
     "datetime": "datetime",
+    "time": "time",
     "json": "json",
     "bool": "bool",
     "uuid": "uuid",
+    "enum": "enum",
+    "array": "array",
+    "interval": "interval",
+    "binary": "binary",
     "other": "other",
 }
 
@@ -96,6 +106,24 @@ THEMES: dict[str, Theme] = {
         header_hover_color="#881337",
         highlight_color="#2563eb",
     ),
+    "yellow": Theme(
+        name="yellow",
+        header_color="#ca8a04",
+        header_hover_color="#a16207",
+        highlight_color="#7c3aed",
+    ),
+    "pink": Theme(
+        name="pink",
+        header_color="#db2777",
+        header_hover_color="#be185d",
+        highlight_color="#2563eb",
+    ),
+    "navy": Theme(
+        name="navy",
+        header_color="#1e3a8a",
+        header_hover_color="#172554",
+        highlight_color="#f59e0b",
+    ),
 }
 
 
@@ -126,9 +154,32 @@ def apply_schema_colors(theme: Theme, tables: list) -> None:
             theme.table_colors[t.name] = theme.schema_colors[t.schema]
 
 
+def _darken_hex(hex_color: str, factor: float = 0.8) -> str:
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    r, g, b = int(r * factor), int(g * factor), int(b * factor)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def _is_hex_color(value: str) -> bool:
+    if not value.startswith("#") or len(value) != 7:
+        return False
+    try:
+        int(value[1:], 16)
+        return True
+    except ValueError:
+        return False
+
+
 def get_theme(name_or_theme: str | Theme, table_colors: dict[str, str] | None = None) -> Theme:
     if isinstance(name_or_theme, Theme):
         theme = deepcopy(name_or_theme)
+    elif _is_hex_color(name_or_theme):
+        theme = Theme(
+            name="custom",
+            header_color=name_or_theme,
+            header_hover_color=_darken_hex(name_or_theme),
+        )
     else:
         if name_or_theme not in THEMES:
             raise ValueError(f"Unknown theme '{name_or_theme}'. Available: {list(THEMES.keys())}")

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 from sqlalchemy import (
-    Column, ForeignKey, Integer, String, Text, DateTime, Boolean,
-    Float, Numeric, JSON, BigInteger, SmallInteger, Date, Uuid,
-    Table, MetaData,
+    ARRAY, Column, Enum, ForeignKey, Integer, Interval, LargeBinary,
+    String, Text, DateTime, Boolean, Float, Numeric, JSON, BigInteger,
+    SmallInteger, Date, Time, Uuid, Table, MetaData,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from datetime import datetime
+from datetime import datetime, timedelta, time
 from decimal import Decimal
 
 
@@ -162,8 +162,12 @@ class AllTypes(TypesBase):
     string_col: Mapped[str] = mapped_column(String(50))
     date_col: Mapped[datetime] = mapped_column(Date)
     datetime_col: Mapped[datetime] = mapped_column(DateTime)
+    time_col: Mapped[time] = mapped_column(Time)
     bool_col: Mapped[bool] = mapped_column(Boolean)
     json_col: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    enum_col: Mapped[str] = mapped_column(Enum("active", "inactive", name="status_enum"))
+    interval_col: Mapped[timedelta] = mapped_column(Interval)
+    binary_col: Mapped[bytes] = mapped_column(LargeBinary)
 
 
 @pytest.fixture

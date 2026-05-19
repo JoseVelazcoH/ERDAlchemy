@@ -10,7 +10,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
 
 from sqlalchemy_erd.introspect import introspect_models
-from sqlalchemy_erd.layout import force_directed_layout
+from sqlalchemy_erd.layout import force_directed_layout, star_layout
 from sqlalchemy_erd.theme import get_theme, apply_schema_colors, THEMES
 from sqlalchemy_erd.export import to_svg, to_html, to_png, to_pdf
 
@@ -68,9 +68,8 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "-t", "--theme",
-        choices=list(THEMES.keys()),
         default="default",
-        help="Color theme (default: default)",
+        help=f"Color theme or hex color (available: {', '.join(THEMES.keys())}, or #hex) (default: default)",
     )
     parser.add_argument(
         "--colors",
@@ -90,6 +89,12 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--schemas",
         help="Comma-separated list of database schemas to include (e.g., public,billing,audit)",
+    )
+    parser.add_argument(
+        "--layout",
+        choices=["force", "star"],
+        default="force",
+        help="Layout algorithm: force (force-directed) or star (column-based) (default: force)",
     )
     parser.add_argument(
         "--k-repulse", type=float, default=35000.0,
@@ -121,11 +126,14 @@ def main(argv: list[str] | None = None) -> None:
     table_colors = json.loads(args.colors) if args.colors else None
     theme = get_theme(args.theme, table_colors)
     apply_schema_colors(theme, tables)
-    positions = force_directed_layout(
-        tables, relationships,
-        k_repulse=args.k_repulse, k_attract=args.k_attract,
-        k_align=args.k_align, ideal_len=args.ideal_len,
-    )
+    if args.layout == "star":
+        positions = star_layout(tables, relationships)
+    else:
+        positions = force_directed_layout(
+            tables, relationships,
+            k_repulse=args.k_repulse, k_attract=args.k_attract,
+            k_align=args.k_align, ideal_len=args.ideal_len,
+        )
 
     output_path = args.output or f"erd.{args.format}"
 

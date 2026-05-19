@@ -12,6 +12,8 @@ from sqlalchemy_erd.theme import (
     SCHEMA_PALETTE,
     DEFAULT_KIND_COLORS,
     DEFAULT_KIND_LABELS,
+    _darken_hex,
+    _is_hex_color,
 )
 from sqlalchemy_erd.introspect import TableInfo, ColumnInfo
 
@@ -28,7 +30,8 @@ class TestThemeDefaults:
 
     def test_kind_colors_complete(self):
         expected = {"pk", "fk", "int", "bigint", "smallint", "float", "numeric",
-                    "string", "text", "date", "datetime", "json", "bool", "uuid", "other"}
+                    "string", "text", "date", "datetime", "time", "json", "bool",
+                    "uuid", "enum", "array", "interval", "binary", "other"}
         assert set(DEFAULT_KIND_COLORS.keys()) == expected
 
     def test_kind_labels_complete(self):
@@ -50,6 +53,32 @@ class TestGetTheme:
         theme = get_theme("default", table_colors={"users": "#ff0000"})
         assert theme.table_colors["users"] == "#ff0000"
 
+    def test_get_yellow_theme(self):
+        theme = get_theme("yellow")
+        assert theme.name == "yellow"
+        assert theme.header_color == "#ca8a04"
+
+    def test_get_pink_theme(self):
+        theme = get_theme("pink")
+        assert theme.name == "pink"
+        assert theme.header_color == "#db2777"
+
+    def test_get_navy_theme(self):
+        theme = get_theme("navy")
+        assert theme.name == "navy"
+        assert theme.header_color == "#1e3a8a"
+
+    def test_get_hex_color_theme(self):
+        theme = get_theme("#6d28d9")
+        assert theme.name == "custom"
+        assert theme.header_color == "#6d28d9"
+        assert theme.header_hover_color == _darken_hex("#6d28d9")
+
+    def test_get_hex_color_with_table_colors(self):
+        theme = get_theme("#ff5500", table_colors={"users": "#000000"})
+        assert theme.header_color == "#ff5500"
+        assert theme.table_colors["users"] == "#000000"
+
     def test_get_unknown_theme_raises(self):
         with pytest.raises(ValueError, match="Unknown theme"):
             get_theme("nonexistent")
@@ -67,6 +96,32 @@ class TestGetTheme:
     def test_get_header_color_override(self):
         theme = get_theme("default", table_colors={"users": "#aabbcc"})
         assert theme.get_header_color("users") == "#aabbcc"
+
+
+class TestHexHelpers:
+    def test_darken_hex(self):
+        assert _darken_hex("#ffffff", 0.5) == "#7f7f7f"
+
+    def test_darken_hex_black(self):
+        assert _darken_hex("#000000") == "#000000"
+
+    def test_is_hex_color_valid(self):
+        assert _is_hex_color("#1e40af") is True
+
+    def test_is_hex_color_uppercase(self):
+        assert _is_hex_color("#FF5500") is True
+
+    def test_is_hex_color_no_hash(self):
+        assert _is_hex_color("1e40af") is False
+
+    def test_is_hex_color_short(self):
+        assert _is_hex_color("#fff") is False
+
+    def test_is_hex_color_invalid_chars(self):
+        assert _is_hex_color("#gggggg") is False
+
+    def test_is_hex_color_named_theme(self):
+        assert _is_hex_color("dark") is False
 
 
 class TestApplySchemaColors:
