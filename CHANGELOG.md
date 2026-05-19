@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/JoseVelazcoH/ERDAlchemy/compare/erdalchemy-v0.2.0...erdalchemy-v0.3.0) (2026-05-19)
+
+
+### Features
+
+* **core:** add support for Enum, ARRAY, Interval, Time, LargeBinary and TypeDecorator column types ([6731ee5](https://github.com/JoseVelazcoH/ERDAlchemy/commit/6731ee50651fb77757ee56394f5310bd152020a7))
+* **core:** add support for missing SQLAlchemy column types ([df5071d](https://github.com/JoseVelazcoH/ERDAlchemy/commit/df5071d1ddf974722eb487aac56d4f585a49344f))
+* **layout:** add star_layout algorithm for star schemas and disconnected graphs ([1a1381f](https://github.com/JoseVelazcoH/ERDAlchemy/commit/1a1381f6a279ee361ae7d8ead48b42b90c5e897f))
+* **layout:** add star_layout algorithm for star schemas and disconnected graphs ([f3ad948](https://github.com/JoseVelazcoH/ERDAlchemy/commit/f3ad9487eb7e1a66257bddcc35f661497cb22e88))
+* **theme:** add yellow, pink, navy themes and custom hex header color ([0d6aee8](https://github.com/JoseVelazcoH/ERDAlchemy/commit/0d6aee8e7d615a5cba306c42be6bdba9610cce1b))
+* **theme:** add yellow, pink, navy themes and custom hex header color ([d742e59](https://github.com/JoseVelazcoH/ERDAlchemy/commit/d742e592c18d197dfa8f4d509baecf768fd7e214))
+
 ## [0.2.0](https://github.com/JoseVelazcoH/ERDAlchemy/compare/erdalchemy-v0.1.1...erdalchemy-v0.2.0) (2026-05-18)
 
 
