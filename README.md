@@ -3,7 +3,7 @@
 Interactive ERD visualizer for SQLAlchemy 2.0 models. Introspects your `DeclarativeBase` metadata and generates diagram files with no manual configuration required.
 
 - Drag-and-drop interactive HTML output
-- Two layout algorithms: force-directed (general) and star (optimized for star/warehouse schemas)
+- Three layout algorithms: hierarchical layered (default), force-directed, and star (optimized for star/warehouse schemas)
 - Hover highlighting for tables and relationships
 - Export to HTML, SVG, PNG, and PDF
 - Built-in color themes and per-table color overrides
@@ -54,8 +54,11 @@ sqlalchemy-erd myapp.models:Base --format png --scale 3
 # Only include specific database schemas
 sqlalchemy-erd myapp.models:Base --schemas public,billing,audit
 
-# Tune layout parameters
-sqlalchemy-erd myapp.models:Base --k-repulse 50000 --k-attract 0.05 --ideal-len 350
+# Layered is the default; switch to force or star explicitly
+sqlalchemy-erd myapp.models:Base --layout force
+
+# Tune the force-directed layout (only applies to --layout force)
+sqlalchemy-erd myapp.models:Base --layout force --k-repulse 50000 --k-attract 0.05 --ideal-len 350
 
 # Use star layout for star/warehouse schemas or disconnected tables
 sqlalchemy-erd myapp.models:Base --layout star
@@ -86,8 +89,10 @@ generate_erd(Base, output="erd.pdf",  format="pdf")             # requires cairo
 # Only include specific database schemas
 generate_erd(Base, output="erd.html", schemas=["public", "billing", "audit"])
 
-# Tune layout parameters
-generate_erd(Base, output="erd.html", k_repulse=50000, k_attract=0.05, ideal_len=350)
+# Tune the force-directed layout via a ForceParams object
+from sqlalchemy_erd import ForceParams
+generate_erd(Base, output="erd.html", layout="force",
+             force=ForceParams(k_repulse=50000, k_attract=0.05, ideal_len=350))
 
 # Use star layout for star/warehouse schemas or disconnected tables
 generate_erd(Base, output="erd.svg", format="svg", layout="star")
@@ -101,9 +106,17 @@ generate_erd(Base, output="erd.svg", format="svg", node_width=400)
 
 ## Layout algorithms
 
-### Force-directed (default)
+### Layered (default)
 
-General-purpose physics-based layout. Works well for most schemas with connected tables.
+Hierarchical layout that ranks tables into columns by foreign-key direction (parent → child, left to right), orders nodes within each column to reduce edge crossings, and stacks cards so they never overlap. The best general-purpose choice — especially for schemas with many tables or wide tables (10+ columns), where it reads like a hand-drawn ERD.
+
+```python
+generate_erd(Base, output="erd.html", layout="layered")
+```
+
+### Force-directed
+
+Physics-based layout with organic placement. Works for small, highly-connected graphs, but can overlap cards on dense or wide schemas. See [Force-directed layout tuning](#force-directed-layout-tuning).
 
 ```python
 generate_erd(Base, output="erd.html", layout="force")
@@ -193,7 +206,21 @@ generate_erd(Base, node_width=400)
 
 ## Force-directed layout tuning
 
-The force-directed layout (`layout="force"`) can be customized via four parameters:
+The force-directed layout (`layout="force"`) is tuned with a `ForceParams` object in the Python API, or the matching flags on the CLI:
+
+```python
+from sqlalchemy_erd import generate_erd, ForceParams
+
+generate_erd(
+    Base, output="erd.html", layout="force",
+    force=ForceParams(k_repulse=50000, k_attract=0.05, k_align=0.02, ideal_len=350),
+)
+```
+
+```bash
+sqlalchemy-erd myapp.models:Base --layout force \
+    --k-repulse 50000 --k-attract 0.05 --k-align 0.02 --ideal-len 350
+```
 
 | Parameter | Default | Description |
 |---|---|---|
