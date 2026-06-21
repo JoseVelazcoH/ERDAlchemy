@@ -1,10 +1,9 @@
 """Tests for sqlalchemy_erd.layered — hierarchical (Sugiyama-style) layered layout."""
 
-from __future__ import annotations
-
+from sqlalchemy_erd.constants.geometry import NODE_W
 from sqlalchemy_erd.introspect import introspect_models, TableInfo, ColumnInfo
 from sqlalchemy_erd.layered import layered_layout
-from sqlalchemy_erd.layout import NODE_W, node_h
+from sqlalchemy_erd.layout import node_h
 
 
 def _make_table(name: str, n_cols: int = 2) -> TableInfo:

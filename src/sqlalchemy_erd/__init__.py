@@ -1,15 +1,14 @@
 """sqlalchemy-erd: Interactive ERD visualization for SQLAlchemy 2.0 models."""
 
-from __future__ import annotations
-
 from typing import Union
 
 from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase
 
+from sqlalchemy_erd.constants.geometry import NODE_W
 from sqlalchemy_erd.force import ForceParams
 from sqlalchemy_erd.introspect import Filters, introspect_models
-from sqlalchemy_erd.layout import auto_node_width, NODE_W
+from sqlalchemy_erd.layout import auto_node_width
 from sqlalchemy_erd.layout_select import LayoutRequest, select_layout
 from sqlalchemy_erd.render import RenderRequest, render, write_output
 from sqlalchemy_erd.theme import Theme, THEMES, get_theme, apply_schema_colors

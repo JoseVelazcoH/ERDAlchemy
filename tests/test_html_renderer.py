@@ -1,7 +1,5 @@
 """Tests for sqlalchemy_erd.html_renderer — interactive HTML output and its JSON payloads."""
 
-from __future__ import annotations
-
 import json
 import re
 

@@ -1,7 +1,5 @@
 """Tests for sqlalchemy_erd.introspect — metadata extraction, relationships, association tables."""
 
-from __future__ import annotations
-
 from sqlalchemy_erd.introspect import (
     introspect_models,
     _classify_type,

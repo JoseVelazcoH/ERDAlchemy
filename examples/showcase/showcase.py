@@ -5,8 +5,6 @@ Run from the repository root:
     python examples/showcase/showcase.py
 """
 
-from __future__ import annotations
-
 from datetime import datetime
 from decimal import Decimal
 

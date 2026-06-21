@@ -7,15 +7,10 @@ other cards. The same math is mirrored in the interactive JS renderer so that
 dragging keeps the routing identical.
 """
 
-from __future__ import annotations
+from sqlalchemy_erd.constants.routing import CORNER_RADIUS, SAME_SIDE_STUB
 
 Side = str
 Point = tuple[float, float]
-
-CORNER_RADIUS = 10.0
-# How far a connector runs past a card before turning, when both ends exit the
-# same side and there is no gap between them to route through.
-SAME_SIDE_STUB = 24.0
 
 
 def _is_horizontal(side: Side) -> bool:

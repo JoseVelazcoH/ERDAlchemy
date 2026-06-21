@@ -1,7 +1,5 @@
 """Tests for regex table/column filtering in introspect_models."""
 
-from __future__ import annotations
-
 from sqlalchemy_erd.introspect import Filters, introspect_models
 
 

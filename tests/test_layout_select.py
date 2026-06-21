@@ -1,7 +1,5 @@
 """Tests for sqlalchemy_erd.layout_select — the layout strategy registry."""
 
-from __future__ import annotations
-
 import pytest
 
 from sqlalchemy_erd.introspect import introspect_models

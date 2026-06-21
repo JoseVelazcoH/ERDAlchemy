@@ -1,7 +1,5 @@
 """Shared fixtures for the ERDAlchemy test suite."""
 
-from __future__ import annotations
-
 import pytest
 from sqlalchemy import (
     ARRAY, Column, Enum, ForeignKey, Integer, Interval, LargeBinary,
