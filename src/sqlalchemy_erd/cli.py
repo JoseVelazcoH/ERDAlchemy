@@ -10,7 +10,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
 
 from sqlalchemy_erd.force import ForceParams
-from sqlalchemy_erd.introspect import introspect_models
+from sqlalchemy_erd.introspect import Filters, introspect_models
 from sqlalchemy_erd.layout import auto_node_width, NODE_W
 from sqlalchemy_erd.layout_select import LayoutRequest, select_layout
 from sqlalchemy_erd.theme import get_theme, apply_schema_colors, THEMES
@@ -125,12 +125,29 @@ def main(argv: list[str] | None = None) -> None:
         "--node-width", default=None,
         help="Card width in pixels, or 'auto' to fit column names (default: 218)",
     )
+    parser.add_argument(
+        "--include-tables", nargs="+", metavar="REGEX",
+        help="Only render tables matching these full-string regex patterns",
+    )
+    parser.add_argument(
+        "--exclude-tables", nargs="+", metavar="REGEX",
+        help="Hide tables matching these full-string regex patterns",
+    )
+    parser.add_argument(
+        "--exclude-columns", nargs="+", metavar="REGEX",
+        help="Hide columns matching these full-string regex patterns",
+    )
 
     args = parser.parse_args(argv)
 
     target = _resolve_target(args.target)
     schemas_list = [s.strip() for s in args.schemas.split(",") if s.strip()] if args.schemas else None
-    tables, relationships = introspect_models(target, schemas=schemas_list)
+    filters = Filters(
+        include_tables=args.include_tables,
+        exclude_tables=args.exclude_tables,
+        exclude_columns=args.exclude_columns,
+    )
+    tables, relationships = introspect_models(target, schemas=schemas_list, filters=filters)
 
     if not tables:
         print("No tables found.", file=sys.stderr)

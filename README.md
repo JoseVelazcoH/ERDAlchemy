@@ -9,6 +9,7 @@ Interactive ERD visualizer for SQLAlchemy 2.0 models. Point it at your `Declarat
 - Drag-and-drop interactive HTML, with hover highlighting
 - Three layouts: hierarchical **layered** (default), force-directed, and star
 - Orthogonal edge routing that follows foreign keys without cutting across cards
+- Regex filtering to focus large schemas (include/exclude tables and columns)
 - Export to HTML, SVG, PNG, and PDF
 - Built-in themes and per-table color overrides
 - Multi-schema support with cross-schema FKs

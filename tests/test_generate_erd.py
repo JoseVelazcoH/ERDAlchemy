@@ -8,6 +8,7 @@ from pathlib import Path
 
 from sqlalchemy_erd import generate_erd
 from sqlalchemy_erd.cli import main, _resolve_target
+from sqlalchemy_erd.introspect import Filters
 
 
 # ── generate_erd API ─────────────────────────────────────────────────────────
@@ -117,6 +118,23 @@ class TestGenerateErd:
         assert isinstance(result, str)
         assert "<svg" in result
 
+    def test_exclude_tables_filter_drops_table_from_output(self, blog_base, tmp_path):
+        out = tmp_path / "test.svg"
+        result = generate_erd(
+            blog_base, output=str(out), format="svg",
+            filters=Filters(exclude_tables=["comments"]),
+        )
+        assert 'data-table="comments"' not in result
+        assert 'data-table="users"' in result
+
+    def test_exclude_columns_filter_hides_column(self, blog_base, tmp_path):
+        out = tmp_path / "test.svg"
+        result = generate_erd(
+            blog_base, output=str(out), format="svg",
+            filters=Filters(exclude_columns=["created_at"]),
+        )
+        assert ">created_at<" not in result
+
     def test_custom_force_params_accepted(self, blog_base, tmp_path):
         from sqlalchemy_erd import ForceParams
         out = tmp_path / "test.svg"
@@ -167,6 +185,27 @@ class TestCli:
         assert out_file.exists()
         content = out_file.read_text()
         assert "<svg" in content
+
+    def test_cli_exclude_tables(self, tmp_path, monkeypatch):
+        models_file = tmp_path / "filter_models.py"
+        models_file.write_text(
+            "from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column\n"
+            "from sqlalchemy import String, ForeignKey\n\n"
+            "class Base(DeclarativeBase):\n"
+            "    pass\n\n"
+            "class Keep(Base):\n"
+            "    __tablename__ = 'keep'\n"
+            "    id: Mapped[int] = mapped_column(primary_key=True)\n\n"
+            "class AuditLog(Base):\n"
+            "    __tablename__ = 'audit_log'\n"
+            "    id: Mapped[int] = mapped_column(primary_key=True)\n"
+        )
+        out_file = tmp_path / "out.svg"
+        monkeypatch.chdir(tmp_path)
+        main(["filter_models:Base", "-f", "svg", "--exclude-tables", "audit_.*", "-o", str(out_file)])
+        content = out_file.read_text()
+        assert 'data-table="keep"' in content
+        assert 'data-table="audit_log"' not in content
 
     def test_cli_layered_layout(self, tmp_path, monkeypatch):
         models_file = tmp_path / "models.py"
