@@ -6,6 +6,7 @@ Full reference for erdalchemy. For a quick overview, see the [README](../README.
 
 - [CLI](#cli)
 - [Python API](#python-api)
+- [Filtering](#filtering)
 - [Layout algorithms](#layout-algorithms)
 - [Force-directed tuning](#force-directed-tuning)
 - [Card width](#card-width)
@@ -33,6 +34,11 @@ sqlalchemy-erd myapp.models:Base --format png --scale 3
 
 # Only include specific database schemas
 sqlalchemy-erd myapp.models:Base --schemas public,billing,audit
+
+# Filter tables / columns by regex (full-string match)
+sqlalchemy-erd myapp.models:Base --exclude-tables "audit_.*" "temp_.*"
+sqlalchemy-erd myapp.models:Base --include-tables "order.*" "product.*"
+sqlalchemy-erd myapp.models:Base --exclude-columns created_at updated_at
 
 # Layered is the default; switch to force or star explicitly
 sqlalchemy-erd myapp.models:Base --layout force
@@ -70,6 +76,36 @@ generate_erd(Base, output="erd.svg", format="svg", layout="star")
 generate_erd(Base, output="erd.svg", format="svg", node_width="auto")
 generate_erd(Base, output="erd.svg", format="svg", node_width=400)
 ```
+
+## Filtering
+
+On large schemas (30-100+ tables) you usually want to focus on a subset. Pass a
+`Filters` object to hide tables or columns. Patterns are **full-string regex**
+(anchored), so a single pattern covers a whole naming family.
+
+```python
+from sqlalchemy_erd import generate_erd, Filters
+
+generate_erd(
+    Base,
+    output="erd.html",
+    filters=Filters(
+        include_tables=["order.*", "product.*"],  # only these (regex)
+        exclude_tables=["audit_.*", ".*_log"],     # applied after include
+        exclude_columns=["created_at", "updated_at", "deleted_at"],
+    ),
+)
+```
+
+| Field | Behavior |
+|---|---|
+| `include_tables` | When set, only matching tables are rendered. Takes precedence. |
+| `exclude_tables` | Removes matching tables, applied after `include_tables`. |
+| `exclude_columns` | Hides matching columns from the cards. Foreign-key relationships are kept. |
+
+Relationships that point at a filtered-out table are dropped, so no arrows dangle.
+(Rendering an excluded-but-referenced table as a ghost node is a planned
+enhancement.)
 
 ## Layout algorithms
 

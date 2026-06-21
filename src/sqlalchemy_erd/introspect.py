@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -36,6 +37,41 @@ class RelationshipInfo:
     from_card: str
     to_card: str
     fk_column: str
+
+
+@dataclass(frozen=True)
+class Filters:
+    """Regex filters applied during introspection.
+
+    Patterns match the full table/column name (anchored). ``include_tables``
+    takes precedence: when set, only matching tables survive; ``exclude_tables``
+    is then applied to what remains. ``exclude_columns`` hides columns from the
+    cards without dropping the foreign-key relationships they carry.
+    """
+
+    include_tables: list[str] | None = None
+    exclude_tables: list[str] | None = None
+    exclude_columns: list[str] | None = None
+
+
+def _compile(patterns: list[str] | None) -> list[re.Pattern[str]] | None:
+    if patterns is None:
+        return None
+    return [re.compile(rf"(?:{pattern})\Z") for pattern in patterns]
+
+
+def _matches_any(name: str, compiled: list[re.Pattern[str]] | None) -> bool:
+    return compiled is not None and any(p.match(name) for p in compiled)
+
+
+def _is_table_kept(
+    name: str,
+    include: list[re.Pattern[str]] | None,
+    exclude: list[re.Pattern[str]] | None,
+) -> bool:
+    if include is not None and not _matches_any(name, include):
+        return False
+    return not _matches_any(name, exclude)
 
 
 _TYPE_MAP: list[tuple[type, str]] = [
@@ -96,12 +132,15 @@ def _build_table(
     table: Any,
     class_names: dict[str, str],
     multi_schema: bool,
+    exclude_columns: list[re.Pattern[str]] | None = None,
 ) -> TableInfo:
     pk_cols = {c.name for c in table.primary_key.columns}
     fk_cols = {col.name for col in table.columns if col.foreign_keys}
 
     columns: list[ColumnInfo] = []
     for col in table.columns:
+        if _matches_any(col.name, exclude_columns):
+            continue
         is_pk = col.name in pk_cols
         is_fk = col.name in fk_cols
         columns.append(ColumnInfo(
@@ -197,20 +236,34 @@ def _collapse_association_tables(
 def introspect_models(
     base_or_metadata: type[DeclarativeBase] | MetaData,
     schemas: list[str] | None = None,
+    filters: Filters | None = None,
 ) -> tuple[list[TableInfo], list[RelationshipInfo]]:
     metadata, class_names = _resolve_metadata(base_or_metadata)
+    filters = filters or Filters()
+    include = _compile(filters.include_tables)
+    exclude = _compile(filters.exclude_tables)
+    exclude_columns = _compile(filters.exclude_columns)
 
     filtered_items = [
         (key, table)
         for key, table in sorted(metadata.tables.items())
-        if schemas is None or table.schema in schemas
+        if (schemas is None or table.schema in schemas)
+        and _is_table_kept(table.name, include, exclude)
     ]
     multi_schema = len({table.schema for _, table in filtered_items}) > 1
 
     tables = [
-        _build_table(table_key, table, class_names, multi_schema)
+        _build_table(table_key, table, class_names, multi_schema, exclude_columns)
         for table_key, table in filtered_items
     ]
     relationships = _build_relationships(filtered_items)
 
-    return _collapse_association_tables(filtered_items, tables, relationships)
+    tables, relationships = _collapse_association_tables(
+        filtered_items, tables, relationships,
+    )
+    kept_names = {t.name for t in tables}
+    relationships = [
+        rel for rel in relationships
+        if rel.from_table in kept_names and rel.to_table in kept_names
+    ]
+    return tables, relationships
