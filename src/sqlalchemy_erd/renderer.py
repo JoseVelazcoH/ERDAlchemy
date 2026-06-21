@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from xml.sax.saxutils import escape
 
+from sqlalchemy_erd.edge_routing import orthogonal_path
 from sqlalchemy_erd.introspect import TableInfo, RelationshipInfo
 from sqlalchemy_erd.layout import NODE_W, HEADER_H, FIELD_H, PAD, node_h
 from sqlalchemy_erd.theme import Theme
@@ -75,18 +76,6 @@ def _side_vec(side: Side, d: float) -> tuple[float, float]:
     if side == "left":
         return -d, 0
     return d, 0
-
-
-def _make_path(
-    fp: tuple[float, float], fs: Side,
-    tp: tuple[float, float], ts: Side,
-) -> str:
-    d = 70
-    o1 = _side_vec(fs, d)
-    o2 = _side_vec(ts, d)
-    c1x, c1y = fp[0] + o1[0], fp[1] + o1[1]
-    c2x, c2y = tp[0] + o2[0], tp[1] + o2[1]
-    return f"M {fp[0]} {fp[1]} C {c1x} {c1y} {c2x} {c2y} {tp[0]} {tp[1]}"
 
 
 def _label_pos(pt: tuple[float, float], side: Side) -> tuple[float, float]:
@@ -171,7 +160,7 @@ def render_svg(
             fpt = _conn_pt(fp, ft, fs, from_idx, node_w)
             tpt = _conn_pt(tp, tt, ts, to_idx, node_w)
 
-        path_d = _make_path(fpt, fs, tpt, ts)
+        path_d = orthogonal_path(fpt, fs, tpt, ts)
         is_nn = rel.from_card == "N" and rel.to_card == "N"
         is_cross = multi_schema and ft.schema != tt.schema
         if is_nn:

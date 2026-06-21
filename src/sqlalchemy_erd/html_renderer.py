@@ -150,10 +150,78 @@ function sideVec(side, d) {{
   return [d, 0];
 }}
 
+// Orthogonal routing — mirrors src/sqlalchemy_erd/edge_routing.py
+const CORNER_RADIUS = 10;
+const SAME_SIDE_STUB = 24;
+
+function isHorizontal(side) {{ return side === 'left' || side === 'right'; }}
+
+function sameSideX(fs, fx, tx) {{
+  return fs === 'right' ? Math.max(fx, tx) + SAME_SIDE_STUB : Math.min(fx, tx) - SAME_SIDE_STUB;
+}}
+
+function sameSideY(fs, fy, ty) {{
+  return fs === 'bottom' ? Math.max(fy, ty) + SAME_SIDE_STUB : Math.min(fy, ty) - SAME_SIDE_STUB;
+}}
+
+function simplifyPoints(points) {{
+  const deduped = [];
+  for (const p of points) {{
+    const last = deduped[deduped.length - 1];
+    if (!last || last[0] !== p[0] || last[1] !== p[1]) deduped.push(p);
+  }}
+  const out = [];
+  for (let i = 0; i < deduped.length; i++) {{
+    if (i > 0 && i < deduped.length - 1) {{
+      const prev = deduped[i - 1], cur = deduped[i], nxt = deduped[i + 1];
+      if ((prev[1] === cur[1] && cur[1] === nxt[1]) ||
+          (prev[0] === cur[0] && cur[0] === nxt[0])) continue;
+    }}
+    out.push(deduped[i]);
+  }}
+  return out;
+}}
+
+function orthogonalWaypoints(fp, fs, tp, ts) {{
+  const fx = fp[0], fy = fp[1], tx = tp[0], ty = tp[1];
+  const pts = [[fx, fy]];
+  if (isHorizontal(fs) && isHorizontal(ts)) {{
+    const bx = fs === ts ? sameSideX(fs, fx, tx) : (fx + tx) / 2;
+    pts.push([bx, fy], [bx, ty]);
+  }} else if (!isHorizontal(fs) && !isHorizontal(ts)) {{
+    const by = fs === ts ? sameSideY(fs, fy, ty) : (fy + ty) / 2;
+    pts.push([fx, by], [tx, by]);
+  }} else if (isHorizontal(fs)) {{
+    pts.push([tx, fy]);
+  }} else {{
+    pts.push([fx, ty]);
+  }}
+  pts.push([tx, ty]);
+  return simplifyPoints(pts);
+}}
+
+function pointTowards(origin, target, dist) {{
+  const dx = target[0] - origin[0], dy = target[1] - origin[1];
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (len === 0) return origin;
+  const step = Math.min(dist, len / 2);
+  return [origin[0] + dx / len * step, origin[1] + dy / len * step];
+}}
+
 function makePath(fp, fs, tp, ts) {{
-  const D = 70;
-  const o1 = sideVec(fs, D), o2 = sideVec(ts, D);
-  return `M ${{fp[0]}} ${{fp[1]}} C ${{fp[0]+o1[0]}} ${{fp[1]+o1[1]}} ${{tp[0]+o2[0]}} ${{tp[1]+o2[1]}} ${{tp[0]}} ${{tp[1]}}`;
+  const pts = orthogonalWaypoints(fp, fs, tp, ts);
+  if (pts.length < 2) return '';
+  if (pts.length === 2) return `M ${{pts[0][0]}} ${{pts[0][1]}} L ${{pts[1][0]}} ${{pts[1][1]}}`;
+  let d = `M ${{pts[0][0]}} ${{pts[0][1]}}`;
+  for (let i = 1; i < pts.length - 1; i++) {{
+    const corner = pts[i];
+    const a = pointTowards(corner, pts[i - 1], CORNER_RADIUS);
+    const b = pointTowards(corner, pts[i + 1], CORNER_RADIUS);
+    d += ` L ${{a[0]}} ${{a[1]}} Q ${{corner[0]}} ${{corner[1]}} ${{b[0]}} ${{b[1]}}`;
+  }}
+  const last = pts[pts.length - 1];
+  d += ` L ${{last[0]}} ${{last[1]}}`;
+  return d;
 }}
 
 function labelPos(pt, side) {{
