@@ -5,6 +5,7 @@ from xml.sax.saxutils import escape
 
 from sqlalchemy_erd.introspect import TableInfo, RelationshipInfo
 from sqlalchemy_erd.layout import NODE_W, HEADER_H, FIELD_H, PAD, node_h
+from sqlalchemy_erd.serialization import build_entities_json, build_relations_json
 from sqlalchemy_erd.theme import Theme
 
 
@@ -16,8 +17,8 @@ def render_html(
     title: str = "ERD",
     node_w: int = NODE_W,
 ) -> str:
-    entities_js = _build_entities_json(tables, theme)
-    relations_js = _build_relations_json(relationships, tables, positions)
+    entities_js = build_entities_json(tables, theme)
+    relations_js = build_relations_json(relationships, tables, positions)
     positions_js = json.dumps({t.name: list(positions[t.name]) for t in tables})
     schema_colors_js = json.dumps({
         (s if s is not None else "_default"): c
@@ -150,10 +151,78 @@ function sideVec(side, d) {{
   return [d, 0];
 }}
 
+// Orthogonal routing — mirrors src/sqlalchemy_erd/edge_routing.py
+const CORNER_RADIUS = 10;
+const SAME_SIDE_STUB = 24;
+
+function isHorizontal(side) {{ return side === 'left' || side === 'right'; }}
+
+function sameSideX(fs, fx, tx) {{
+  return fs === 'right' ? Math.max(fx, tx) + SAME_SIDE_STUB : Math.min(fx, tx) - SAME_SIDE_STUB;
+}}
+
+function sameSideY(fs, fy, ty) {{
+  return fs === 'bottom' ? Math.max(fy, ty) + SAME_SIDE_STUB : Math.min(fy, ty) - SAME_SIDE_STUB;
+}}
+
+function simplifyPoints(points) {{
+  const deduped = [];
+  for (const p of points) {{
+    const last = deduped[deduped.length - 1];
+    if (!last || last[0] !== p[0] || last[1] !== p[1]) deduped.push(p);
+  }}
+  const out = [];
+  for (let i = 0; i < deduped.length; i++) {{
+    if (i > 0 && i < deduped.length - 1) {{
+      const prev = deduped[i - 1], cur = deduped[i], nxt = deduped[i + 1];
+      if ((prev[1] === cur[1] && cur[1] === nxt[1]) ||
+          (prev[0] === cur[0] && cur[0] === nxt[0])) continue;
+    }}
+    out.push(deduped[i]);
+  }}
+  return out;
+}}
+
+function orthogonalWaypoints(fp, fs, tp, ts) {{
+  const fx = fp[0], fy = fp[1], tx = tp[0], ty = tp[1];
+  const pts = [[fx, fy]];
+  if (isHorizontal(fs) && isHorizontal(ts)) {{
+    const bx = fs === ts ? sameSideX(fs, fx, tx) : (fx + tx) / 2;
+    pts.push([bx, fy], [bx, ty]);
+  }} else if (!isHorizontal(fs) && !isHorizontal(ts)) {{
+    const by = fs === ts ? sameSideY(fs, fy, ty) : (fy + ty) / 2;
+    pts.push([fx, by], [tx, by]);
+  }} else if (isHorizontal(fs)) {{
+    pts.push([tx, fy]);
+  }} else {{
+    pts.push([fx, ty]);
+  }}
+  pts.push([tx, ty]);
+  return simplifyPoints(pts);
+}}
+
+function pointTowards(origin, target, dist) {{
+  const dx = target[0] - origin[0], dy = target[1] - origin[1];
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (len === 0) return origin;
+  const step = Math.min(dist, len / 2);
+  return [origin[0] + dx / len * step, origin[1] + dy / len * step];
+}}
+
 function makePath(fp, fs, tp, ts) {{
-  const D = 70;
-  const o1 = sideVec(fs, D), o2 = sideVec(ts, D);
-  return `M ${{fp[0]}} ${{fp[1]}} C ${{fp[0]+o1[0]}} ${{fp[1]+o1[1]}} ${{tp[0]+o2[0]}} ${{tp[1]+o2[1]}} ${{tp[0]}} ${{tp[1]}}`;
+  const pts = orthogonalWaypoints(fp, fs, tp, ts);
+  if (pts.length < 2) return '';
+  if (pts.length === 2) return `M ${{pts[0][0]}} ${{pts[0][1]}} L ${{pts[1][0]}} ${{pts[1][1]}}`;
+  let d = `M ${{pts[0][0]}} ${{pts[0][1]}}`;
+  for (let i = 1; i < pts.length - 1; i++) {{
+    const corner = pts[i];
+    const a = pointTowards(corner, pts[i - 1], CORNER_RADIUS);
+    const b = pointTowards(corner, pts[i + 1], CORNER_RADIUS);
+    d += ` L ${{a[0]}} ${{a[1]}} Q ${{corner[0]}} ${{corner[1]}} ${{b[0]}} ${{b[1]}}`;
+  }}
+  const last = pts[pts.length - 1];
+  d += ` L ${{last[0]}} ${{last[1]}}`;
+  return d;
 }}
 
 function labelPos(pt, side) {{
@@ -414,61 +483,3 @@ render();
 </script>
 </body>
 </html>"""
-
-
-def _build_entities_json(
-    tables: list[TableInfo],
-    theme: Theme,
-) -> str:
-    entities = []
-    for t in tables:
-        fields = []
-        for col in t.columns:
-            name_color = (
-                theme.kind_colors.get("pk", "#5C2472") if col.is_pk
-                else "#9a3412" if col.is_fk
-                else theme.field_text_color
-            )
-            name_weight = "700" if col.is_pk else "400"
-            kind_color = theme.kind_colors.get(col.kind, "#9ca3af")
-            kind_label = theme.kind_labels.get(col.kind, col.kind)
-            if not col.is_pk and not col.is_fk and col.nullable:
-                kind_label += "?"
-
-            fields.append({
-                "name": col.name,
-                "nameColor": name_color,
-                "nameWeight": name_weight,
-                "kindColor": kind_color,
-                "kindLabel": kind_label,
-            })
-
-        header_color = theme.get_header_color(t.name)
-        entities.append({
-            "id": t.name,
-            "label": t.class_name,
-            "schema": t.schema,
-            "headerColor": header_color,
-            "hoverColor": theme.header_hover_color,
-            "fields": fields,
-        })
-    return json.dumps(entities)
-
-
-def _build_relations_json(
-    relationships: list[RelationshipInfo],
-    tables: list[TableInfo],
-    positions: dict[str, tuple[float, float]],
-) -> str:
-    table_names = {t.name for t in tables}
-    rels = []
-    for r in relationships:
-        if r.from_table in table_names and r.to_table in table_names:
-            rels.append({
-                "from": r.from_table,
-                "to": r.to_table,
-                "fromCard": r.from_card,
-                "toCard": r.to_card,
-                "fkCol": r.fk_column,
-            })
-    return json.dumps(rels)

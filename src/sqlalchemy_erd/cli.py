@@ -9,10 +9,12 @@ from pathlib import Path
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
 
-from sqlalchemy_erd.introspect import introspect_models
-from sqlalchemy_erd.layout import force_directed_layout, star_layout, auto_node_width, NODE_W
+from sqlalchemy_erd.force import ForceParams
+from sqlalchemy_erd.introspect import Filters, introspect_models
+from sqlalchemy_erd.layout import auto_node_width, NODE_W
+from sqlalchemy_erd.layout_select import LayoutRequest, select_layout
+from sqlalchemy_erd.render import RenderRequest, render, write_output
 from sqlalchemy_erd.theme import get_theme, apply_schema_colors, THEMES
-from sqlalchemy_erd.export import to_svg, to_html, to_png, to_pdf
 
 
 def _resolve_target(spec: str) -> type[DeclarativeBase] | MetaData:
@@ -92,9 +94,12 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "--layout",
-        choices=["force", "star"],
-        default="force",
-        help="Layout algorithm: force (force-directed) or star (column-based) (default: force)",
+        choices=["layered", "force", "star"],
+        default="layered",
+        help=(
+            "Layout algorithm: layered (hierarchical), force (force-directed), "
+            "or star (column-based) (default: layered)"
+        ),
     )
     parser.add_argument(
         "--k-repulse", type=float, default=35000.0,
@@ -120,12 +125,29 @@ def main(argv: list[str] | None = None) -> None:
         "--node-width", default=None,
         help="Card width in pixels, or 'auto' to fit column names (default: 218)",
     )
+    parser.add_argument(
+        "--include-tables", nargs="+", metavar="REGEX",
+        help="Only render tables matching these full-string regex patterns",
+    )
+    parser.add_argument(
+        "--exclude-tables", nargs="+", metavar="REGEX",
+        help="Hide tables matching these full-string regex patterns",
+    )
+    parser.add_argument(
+        "--exclude-columns", nargs="+", metavar="REGEX",
+        help="Hide columns matching these full-string regex patterns",
+    )
 
     args = parser.parse_args(argv)
 
     target = _resolve_target(args.target)
     schemas_list = [s.strip() for s in args.schemas.split(",") if s.strip()] if args.schemas else None
-    tables, relationships = introspect_models(target, schemas=schemas_list)
+    filters = Filters(
+        include_tables=args.include_tables,
+        exclude_tables=args.exclude_tables,
+        exclude_columns=args.exclude_columns,
+    )
+    tables, relationships = introspect_models(target, schemas=schemas_list, filters=filters)
 
     if not tables:
         print("No tables found.", file=sys.stderr)
@@ -142,30 +164,31 @@ def main(argv: list[str] | None = None) -> None:
     else:
         node_w = NODE_W
 
-    if args.layout == "star":
-        positions = star_layout(tables, relationships, star_cols=args.star_cols, node_w=node_w)
-    else:
-        positions = force_directed_layout(
-            tables, relationships,
-            k_repulse=args.k_repulse, k_attract=args.k_attract,
-            k_align=args.k_align, ideal_len=args.ideal_len,
-            node_w=node_w,
-        )
+    force = ForceParams(
+        k_repulse=args.k_repulse, k_attract=args.k_attract,
+        k_align=args.k_align, ideal_len=args.ideal_len,
+    )
+    positions = select_layout(args.layout, LayoutRequest(
+        tables=tables,
+        relationships=relationships,
+        node_w=node_w,
+        star_cols=args.star_cols,
+        force=force,
+    ))
 
     output_path = args.output or f"erd.{args.format}"
 
-    if args.format == "html":
-        content = to_html(tables, relationships, positions, theme, title=args.title, node_w=node_w)
-        Path(output_path).write_text(content, encoding="utf-8")
-    elif args.format == "svg":
-        content = to_svg(tables, relationships, positions, theme, node_w=node_w)
-        Path(output_path).write_text(content, encoding="utf-8")
-    elif args.format == "png":
-        data = to_png(tables, relationships, positions, theme, scale=args.scale, node_w=node_w)
-        Path(output_path).write_bytes(data)
-    elif args.format == "pdf":
-        data = to_pdf(tables, relationships, positions, theme, node_w=node_w)
-        Path(output_path).write_bytes(data)
+    result = render(args.format, RenderRequest(
+        tables=tables,
+        relationships=relationships,
+        positions=positions,
+        theme=theme,
+        node_w=node_w,
+        title=args.title,
+        scale=args.scale,
+    ))
+
+    write_output(output_path, result)
 
     print(f"Generated {output_path}")
 

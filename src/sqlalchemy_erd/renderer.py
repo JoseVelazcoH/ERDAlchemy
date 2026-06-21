@@ -2,11 +2,22 @@ from __future__ import annotations
 
 from xml.sax.saxutils import escape
 
+from sqlalchemy_erd.edge_routing import orthogonal_path
 from sqlalchemy_erd.introspect import TableInfo, RelationshipInfo
 from sqlalchemy_erd.layout import NODE_W, HEADER_H, FIELD_H, PAD, node_h
 from sqlalchemy_erd.theme import Theme
 
 Side = str
+
+# Card visual styling (px). Mirrored by the interactive renderer in html_renderer.py.
+CARD_RADIUS = 7          # rounded-corner radius of the card and header
+HEADER_STRIP_H = 7       # square-off strip under the rounded header
+TITLE_FONT_SIZE = 13     # table title in the header
+FIELD_FONT_SIZE = 10     # column name
+KIND_FONT_SIZE = 9       # column type label
+TITLE_INSET = 12         # left inset of the title text
+FIELD_INSET = 10         # left inset of the column name / separator line
+KIND_INSET = 8           # right inset of the type label
 
 
 def _best_side(
@@ -75,18 +86,6 @@ def _side_vec(side: Side, d: float) -> tuple[float, float]:
     if side == "left":
         return -d, 0
     return d, 0
-
-
-def _make_path(
-    fp: tuple[float, float], fs: Side,
-    tp: tuple[float, float], ts: Side,
-) -> str:
-    d = 70
-    o1 = _side_vec(fs, d)
-    o2 = _side_vec(ts, d)
-    c1x, c1y = fp[0] + o1[0], fp[1] + o1[1]
-    c2x, c2y = tp[0] + o2[0], tp[1] + o2[1]
-    return f"M {fp[0]} {fp[1]} C {c1x} {c1y} {c2x} {c2y} {tp[0]} {tp[1]}"
 
 
 def _label_pos(pt: tuple[float, float], side: Side) -> tuple[float, float]:
@@ -171,12 +170,9 @@ def render_svg(
             fpt = _conn_pt(fp, ft, fs, from_idx, node_w)
             tpt = _conn_pt(tp, tt, ts, to_idx, node_w)
 
-        path_d = _make_path(fpt, fs, tpt, ts)
+        path_d = orthogonal_path(fpt, fs, tpt, ts)
         is_nn = rel.from_card == "N" and rel.to_card == "N"
-        is_cross = multi_schema and (
-            table_map.get(rel.from_table, tables[0]).schema
-            != table_map.get(rel.to_table, tables[0]).schema
-        )
+        is_cross = multi_schema and ft.schema != tt.schema
         if is_nn:
             dash = ' stroke-dasharray="5 3"'
         elif is_cross:
@@ -215,17 +211,20 @@ def render_svg(
             f'  <g class="erd-node" data-table="{table.name}" '
             f'transform="translate({x}, {y})" style="cursor: grab;">'
         )
-        parts.append(f'    <rect x="3" y="3" rx="7" width="{node_w}" height="{h}" fill="rgba(0,0,0,0.06)" />')
+        parts.append(f'    <rect x="3" y="3" rx="{CARD_RADIUS}" width="{node_w}" height="{h}" fill="rgba(0,0,0,0.06)" />')
         parts.append(
-            f'    <rect class="erd-card" rx="7" width="{node_w}" height="{h}" '
+            f'    <rect class="erd-card" rx="{CARD_RADIUS}" width="{node_w}" height="{h}" '
             f'fill="{theme.card_bg}" stroke="{theme.card_border}" stroke-width="1" />'
         )
-        parts.append(f'    <rect rx="7" width="{node_w}" height="{HEADER_H}" fill="{header_col}" />')
-        parts.append(f'    <rect y="{HEADER_H - 7}" width="{node_w}" height="7" fill="{header_col}" />')
+        parts.append(f'    <rect rx="{CARD_RADIUS}" width="{node_w}" height="{HEADER_H}" fill="{header_col}" />')
+        parts.append(
+            f'    <rect y="{HEADER_H - HEADER_STRIP_H}" width="{node_w}" '
+            f'height="{HEADER_STRIP_H}" fill="{header_col}" />'
+        )
 
         parts.append(
-            f'    <text x="12" y="{HEADER_H / 2 + 1}" font-size="13" font-weight="600" '
-            f'fill="white" dominant-baseline="middle" '
+            f'    <text x="{TITLE_INSET}" y="{HEADER_H / 2 + 1}" font-size="{TITLE_FONT_SIZE}" '
+            f'font-weight="600" fill="white" dominant-baseline="middle" '
             f'style="letter-spacing: 0.01em;">{escape(table.class_name)}</text>'
         )
 
@@ -234,28 +233,28 @@ def render_svg(
             if i > 0:
                 sep_y = HEADER_H + PAD + i * FIELD_H
                 parts.append(
-                    f'    <line x1="10" y1="{sep_y}" x2="{node_w - 10}" y2="{sep_y}" '
+                    f'    <line x1="{FIELD_INSET}" y1="{sep_y}" x2="{node_w - FIELD_INSET}" y2="{sep_y}" '
                     f'stroke="{theme.separator_color}" stroke-width="1" />'
                 )
             col_color = (
-                theme.kind_colors.get("pk", "#5C2472") if col.is_pk
-                else "#9a3412" if col.is_fk
+                theme.kind_colors["pk"] if col.is_pk
+                else theme.kind_colors["fk"] if col.is_fk
                 else theme.field_text_color
             )
             col_weight = "700" if col.is_pk else "400"
-            kind_color = theme.kind_colors.get(col.kind, "#9ca3af")
+            kind_color = theme.kind_colors.get(col.kind, theme.kind_colors["other"])
             kind_label = theme.kind_labels.get(col.kind, col.kind)
             if not col.is_pk and not col.is_fk and col.nullable:
                 kind_label += "?"
 
             parts.append(
-                f'    <text x="10" y="{fy}" font-size="10" '
+                f'    <text x="{FIELD_INSET}" y="{fy}" font-size="{FIELD_FONT_SIZE}" '
                 f'font-family="\'Courier New\', Courier, monospace" '
                 f'fill="{col_color}" font-weight="{col_weight}" '
                 f'dominant-baseline="middle">{escape(col.name)}</text>'
             )
             parts.append(
-                f'    <text x="{node_w - 8}" y="{fy}" font-size="9" '
+                f'    <text x="{node_w - KIND_INSET}" y="{fy}" font-size="{KIND_FONT_SIZE}" '
                 f'font-family="\'Courier New\', Courier, monospace" '
                 f'fill="{kind_color}" text-anchor="end" '
                 f'dominant-baseline="middle" opacity="0.9">{escape(kind_label)}</text>'
