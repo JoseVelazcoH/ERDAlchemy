@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Union
 
 from sqlalchemy import MetaData
@@ -12,8 +11,8 @@ from sqlalchemy_erd.force import ForceParams
 from sqlalchemy_erd.introspect import Filters, introspect_models
 from sqlalchemy_erd.layout import auto_node_width, NODE_W
 from sqlalchemy_erd.layout_select import LayoutRequest, select_layout
+from sqlalchemy_erd.render import RenderRequest, render, write_output
 from sqlalchemy_erd.theme import Theme, THEMES, get_theme, apply_schema_colors
-from sqlalchemy_erd.export import to_html, to_svg, to_png, to_pdf
 
 __version__ = "0.1.1"
 
@@ -55,21 +54,14 @@ def generate_erd(
         force=force,
     ))
 
-    if format == "html":
-        content = to_html(tables, relationships, positions, resolved_theme, title=title, node_w=node_w)
-        Path(output).write_text(content, encoding="utf-8")
-        return content
-    elif format == "svg":
-        content = to_svg(tables, relationships, positions, resolved_theme, node_w=node_w)
-        Path(output).write_text(content, encoding="utf-8")
-        return content
-    elif format == "png":
-        data = to_png(tables, relationships, positions, resolved_theme, scale=scale, node_w=node_w)
-        Path(output).write_bytes(data)
-        return data
-    elif format == "pdf":
-        data = to_pdf(tables, relationships, positions, resolved_theme, node_w=node_w)
-        Path(output).write_bytes(data)
-        return data
-    else:
-        raise ValueError(f"Unknown format '{format}'. Use: html, svg, png, pdf")
+    result = render(format, RenderRequest(
+        tables=tables,
+        relationships=relationships,
+        positions=positions,
+        theme=resolved_theme,
+        node_w=node_w,
+        title=title,
+        scale=scale,
+    ))
+    write_output(output, result)
+    return result
