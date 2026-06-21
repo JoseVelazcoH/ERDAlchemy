@@ -173,10 +173,7 @@ def render_svg(
 
         path_d = _make_path(fpt, fs, tpt, ts)
         is_nn = rel.from_card == "N" and rel.to_card == "N"
-        is_cross = multi_schema and (
-            table_map.get(rel.from_table, tables[0]).schema
-            != table_map.get(rel.to_table, tables[0]).schema
-        )
+        is_cross = multi_schema and ft.schema != tt.schema
         if is_nn:
             dash = ' stroke-dasharray="5 3"'
         elif is_cross:
@@ -238,12 +235,12 @@ def render_svg(
                     f'stroke="{theme.separator_color}" stroke-width="1" />'
                 )
             col_color = (
-                theme.kind_colors.get("pk", "#5C2472") if col.is_pk
-                else "#9a3412" if col.is_fk
+                theme.kind_colors["pk"] if col.is_pk
+                else theme.kind_colors["fk"] if col.is_fk
                 else theme.field_text_color
             )
             col_weight = "700" if col.is_pk else "400"
-            kind_color = theme.kind_colors.get(col.kind, "#9ca3af")
+            kind_color = theme.kind_colors.get(col.kind, theme.kind_colors["other"])
             kind_label = theme.kind_labels.get(col.kind, col.kind)
             if not col.is_pk and not col.is_fk and col.nullable:
                 kind_label += "?"

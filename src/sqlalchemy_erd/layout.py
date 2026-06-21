@@ -284,7 +284,7 @@ def _single_fact_layout(
                     fk_order[rel.from_table] = idx
                     break
 
-    catalogs = sorted(catalogs, key=lambda t: fk_order.get(t.name, 999))
+    catalogs = sorted(catalogs, key=lambda t: fk_order.get(t.name, math.inf))
 
     if star_cols is None:
         star_cols = 2 if len(catalogs) > 12 else 1

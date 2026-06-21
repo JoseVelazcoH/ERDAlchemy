@@ -100,7 +100,7 @@ def introspect_models(
 
     tables: list[TableInfo] = []
     relationships: list[RelationshipInfo] = []
-    seen_fks: set[tuple[str, str]] = set()
+    seen_fks: set[tuple[str, str, str]] = set()
 
     for table_key, table in filtered_items:
         pk_cols = {c.name for c in table.primary_key.columns}
