@@ -8,8 +8,9 @@ from typing import Union
 from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase
 
+from sqlalchemy_erd.force import ForceParams
 from sqlalchemy_erd.introspect import Filters, introspect_models
-from sqlalchemy_erd.layout import auto_node_width, ForceParams, NODE_W
+from sqlalchemy_erd.layout import auto_node_width, NODE_W
 from sqlalchemy_erd.layout_select import LayoutRequest, select_layout
 from sqlalchemy_erd.theme import Theme, THEMES, get_theme, apply_schema_colors
 from sqlalchemy_erd.export import to_html, to_svg, to_png, to_pdf

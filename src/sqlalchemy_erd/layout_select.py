@@ -10,9 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
+from sqlalchemy_erd.force import force_directed_layout, ForceParams
 from sqlalchemy_erd.introspect import RelationshipInfo, TableInfo
 from sqlalchemy_erd.layered import layered_layout
-from sqlalchemy_erd.layout import force_directed_layout, star_layout, ForceParams, NODE_W
+from sqlalchemy_erd.layout import NODE_W
+from sqlalchemy_erd.star import star_layout
 
 Positions = dict[str, tuple[float, float]]
 

@@ -9,6 +9,16 @@ from sqlalchemy_erd.theme import Theme
 
 Side = str
 
+# Card visual styling (px). Mirrored by the interactive renderer in html_renderer.py.
+CARD_RADIUS = 7          # rounded-corner radius of the card and header
+HEADER_STRIP_H = 7       # square-off strip under the rounded header
+TITLE_FONT_SIZE = 13     # table title in the header
+FIELD_FONT_SIZE = 10     # column name
+KIND_FONT_SIZE = 9       # column type label
+TITLE_INSET = 12         # left inset of the title text
+FIELD_INSET = 10         # left inset of the column name / separator line
+KIND_INSET = 8           # right inset of the type label
+
 
 def _best_side(
     from_pos: tuple[float, float],
@@ -201,17 +211,20 @@ def render_svg(
             f'  <g class="erd-node" data-table="{table.name}" '
             f'transform="translate({x}, {y})" style="cursor: grab;">'
         )
-        parts.append(f'    <rect x="3" y="3" rx="7" width="{node_w}" height="{h}" fill="rgba(0,0,0,0.06)" />')
+        parts.append(f'    <rect x="3" y="3" rx="{CARD_RADIUS}" width="{node_w}" height="{h}" fill="rgba(0,0,0,0.06)" />')
         parts.append(
-            f'    <rect class="erd-card" rx="7" width="{node_w}" height="{h}" '
+            f'    <rect class="erd-card" rx="{CARD_RADIUS}" width="{node_w}" height="{h}" '
             f'fill="{theme.card_bg}" stroke="{theme.card_border}" stroke-width="1" />'
         )
-        parts.append(f'    <rect rx="7" width="{node_w}" height="{HEADER_H}" fill="{header_col}" />')
-        parts.append(f'    <rect y="{HEADER_H - 7}" width="{node_w}" height="7" fill="{header_col}" />')
+        parts.append(f'    <rect rx="{CARD_RADIUS}" width="{node_w}" height="{HEADER_H}" fill="{header_col}" />')
+        parts.append(
+            f'    <rect y="{HEADER_H - HEADER_STRIP_H}" width="{node_w}" '
+            f'height="{HEADER_STRIP_H}" fill="{header_col}" />'
+        )
 
         parts.append(
-            f'    <text x="12" y="{HEADER_H / 2 + 1}" font-size="13" font-weight="600" '
-            f'fill="white" dominant-baseline="middle" '
+            f'    <text x="{TITLE_INSET}" y="{HEADER_H / 2 + 1}" font-size="{TITLE_FONT_SIZE}" '
+            f'font-weight="600" fill="white" dominant-baseline="middle" '
             f'style="letter-spacing: 0.01em;">{escape(table.class_name)}</text>'
         )
 
@@ -220,7 +233,7 @@ def render_svg(
             if i > 0:
                 sep_y = HEADER_H + PAD + i * FIELD_H
                 parts.append(
-                    f'    <line x1="10" y1="{sep_y}" x2="{node_w - 10}" y2="{sep_y}" '
+                    f'    <line x1="{FIELD_INSET}" y1="{sep_y}" x2="{node_w - FIELD_INSET}" y2="{sep_y}" '
                     f'stroke="{theme.separator_color}" stroke-width="1" />'
                 )
             col_color = (
@@ -235,13 +248,13 @@ def render_svg(
                 kind_label += "?"
 
             parts.append(
-                f'    <text x="10" y="{fy}" font-size="10" '
+                f'    <text x="{FIELD_INSET}" y="{fy}" font-size="{FIELD_FONT_SIZE}" '
                 f'font-family="\'Courier New\', Courier, monospace" '
                 f'fill="{col_color}" font-weight="{col_weight}" '
                 f'dominant-baseline="middle">{escape(col.name)}</text>'
             )
             parts.append(
-                f'    <text x="{node_w - 8}" y="{fy}" font-size="9" '
+                f'    <text x="{node_w - KIND_INSET}" y="{fy}" font-size="{KIND_FONT_SIZE}" '
                 f'font-family="\'Courier New\', Courier, monospace" '
                 f'fill="{kind_color}" text-anchor="end" '
                 f'dominant-baseline="middle" opacity="0.9">{escape(kind_label)}</text>'
