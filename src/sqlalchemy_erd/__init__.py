@@ -9,7 +9,9 @@ from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase
 
 from sqlalchemy_erd.introspect import introspect_models
-from sqlalchemy_erd.layout import force_directed_layout, star_layout, auto_node_width, NODE_W
+from sqlalchemy_erd.layout import (
+    force_directed_layout, star_layout, auto_node_width, ForceParams, NODE_W,
+)
 from sqlalchemy_erd.theme import Theme, THEMES, get_theme, apply_schema_colors
 from sqlalchemy_erd.export import to_html, to_svg, to_png, to_pdf
 
@@ -29,10 +31,7 @@ def generate_erd(
     star_cols: int | None = None,
     node_width: Union[int, str, None] = None,
     *,
-    k_repulse: float = 35000.0,
-    k_attract: float = 0.1,
-    k_align: float = 0.02,
-    ideal_len: float = 280.0,
+    force: ForceParams | None = None,
 ) -> Union[str, bytes]:
     tables, relationships = introspect_models(base_or_metadata, schemas=schemas)
     resolved_theme = get_theme(theme, table_colors)
@@ -50,8 +49,7 @@ def generate_erd(
     elif layout == "force":
         positions = force_directed_layout(
             tables, relationships,
-            k_repulse=k_repulse, k_attract=k_attract,
-            k_align=k_align, ideal_len=ideal_len,
+            force=force or ForceParams(),
             node_w=node_w,
         )
     else:

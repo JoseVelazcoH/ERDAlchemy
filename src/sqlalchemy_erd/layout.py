@@ -12,24 +12,55 @@ HEADER_H = 36
 FIELD_H = 21
 PAD = 6
 
+# Approximate glyph widths (px) used to size a card to its widest text.
+# These track the font sizes/families in renderer.py and html_renderer.py.
+FIELD_CHAR_W = 6.2       # monospace field-name / kind-label font
+HEADER_CHAR_W = 7.8      # bold header-title font
+HEADER_PADDING = 24      # left + right padding around the header label
+FIELD_PADDING_LEFT = 10  # left inset of the field name
+FIELD_LABEL_GAP = 12     # gap between field name and kind label
+FIELD_PADDING_RIGHT = 8  # right inset of the kind label
+
 
 def node_h(table: TableInfo) -> int:
     return HEADER_H + PAD + len(table.columns) * FIELD_H + PAD
 
 
 def auto_node_width(tables: list[TableInfo]) -> int:
-    char_w = 6.2
     max_w = NODE_W
     for t in tables:
-        header_w = 24 + len(t.class_name) * 7.8
+        header_w = HEADER_PADDING + len(t.class_name) * HEADER_CHAR_W
         max_w = max(max_w, int(header_w))
         for col in t.columns:
             kind_label = DEFAULT_KIND_LABELS.get(col.kind, col.kind)
             if not col.is_pk and not col.is_fk and col.nullable:
                 kind_label += "?"
-            col_w = 10 + len(col.name) * char_w + 12 + len(kind_label) * char_w + 8
+            col_w = (
+                FIELD_PADDING_LEFT
+                + len(col.name) * FIELD_CHAR_W
+                + FIELD_LABEL_GAP
+                + len(kind_label) * FIELD_CHAR_W
+                + FIELD_PADDING_RIGHT
+            )
             max_w = max(max_w, int(col_w))
     return max_w
+
+
+@dataclass(frozen=True)
+class ForceParams:
+    """Tuning knobs for :func:`force_directed_layout`.
+
+    Args:
+        k_repulse: Repulsion strength between all nodes.
+        k_attract: Attraction strength between connected nodes.
+        k_align: Horizontal-alignment force for connected nodes.
+        ideal_len: Target edge length in pixels between connected nodes.
+    """
+
+    k_repulse: float = 35000.0
+    k_attract: float = 0.1
+    k_align: float = 0.02
+    ideal_len: float = 280.0
 
 
 @dataclass
@@ -56,10 +87,7 @@ def force_directed_layout(
     iterations: int = 300,
     seed: int | None = 42,
     *,
-    k_repulse: float = 35000.0,
-    k_attract: float = 0.1,
-    k_align: float = 0.02,
-    ideal_len: float = 280.0,
+    force: ForceParams = ForceParams(),
     node_w: int = NODE_W,
 ) -> dict[str, tuple[float, float]]:
     """Compute table positions using a force-directed graph layout.
@@ -69,16 +97,19 @@ def force_directed_layout(
         relationships: FK / M:N edges between tables.
         iterations: Number of simulation steps (higher = more stable).
         seed: Random seed for reproducible layouts (``None`` for random).
-        k_repulse: Repulsion strength between all nodes.
-        k_attract: Attraction strength between connected nodes.
-        k_align: Horizontal-alignment force for connected nodes.
-        ideal_len: Target edge length in pixels between connected nodes.
+        force: Force-simulation tuning constants.
+        node_w: Card width in pixels, used for overlap resolution.
 
     Returns:
         Mapping of table name → ``(x, y)`` position.
     """
     if not tables:
         return {}
+
+    k_repulse = force.k_repulse
+    k_attract = force.k_attract
+    k_align = force.k_align
+    ideal_len = force.ideal_len
 
     rng = random.Random(seed)
 

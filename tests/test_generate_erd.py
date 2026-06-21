@@ -7,7 +7,7 @@ import pytest
 from pathlib import Path
 
 from sqlalchemy_erd import generate_erd
-from sqlalchemy_erd.cli import main
+from sqlalchemy_erd.cli import main, _resolve_target
 
 
 # ── generate_erd API ─────────────────────────────────────────────────────────
@@ -104,6 +104,16 @@ class TestGenerateErd:
     def test_unknown_layout_raises(self, blog_base, tmp_path):
         with pytest.raises(ValueError, match="Unknown layout"):
             generate_erd(blog_base, output=str(tmp_path / "test.svg"), format="svg", layout="bad")
+
+    def test_custom_force_params_accepted(self, blog_base, tmp_path):
+        from sqlalchemy_erd import ForceParams
+        out = tmp_path / "test.svg"
+        result = generate_erd(
+            blog_base, output=str(out), format="svg",
+            force=ForceParams(ideal_len=400.0, k_repulse=50000.0),
+        )
+        assert isinstance(result, str)
+        assert "<svg" in result
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
@@ -214,3 +224,49 @@ class TestCli:
         assert out_file.exists()
         content = out_file.read_text()
         assert 'width="350"' in content
+
+
+# ── CLI error paths ──────────────────────────────────────────────────────────
+
+class TestCliErrors:
+    def test_resolve_target_missing_module_raises(self):
+        with pytest.raises(ModuleNotFoundError):
+            _resolve_target("this_module_does_not_exist:Base")
+
+    def test_resolve_target_missing_attribute_raises(self, tmp_path, monkeypatch):
+        models_file = tmp_path / "empty_models.py"
+        models_file.write_text("X = 1\n")
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(AttributeError):
+            _resolve_target("empty_models:Base")
+
+    def test_resolve_target_no_base_or_metadata_exits(self, tmp_path, monkeypatch):
+        models_file = tmp_path / "no_models.py"
+        models_file.write_text("VALUE = 42\n")
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(SystemExit) as exc:
+            _resolve_target("no_models")
+        assert exc.value.code == 1
+
+    def test_resolve_target_finds_metadata_without_attr(self, tmp_path, monkeypatch):
+        models_file = tmp_path / "meta_models.py"
+        models_file.write_text(
+            "from sqlalchemy import MetaData, Table, Column, Integer\n"
+            "md = MetaData()\n"
+            "Table('t', md, Column('id', Integer, primary_key=True))\n"
+        )
+        monkeypatch.chdir(tmp_path)
+        from sqlalchemy import MetaData
+        assert isinstance(_resolve_target("meta_models"), MetaData)
+
+    def test_cli_no_tables_exits(self, tmp_path, monkeypatch):
+        models_file = tmp_path / "bare_models.py"
+        models_file.write_text(
+            "from sqlalchemy.orm import DeclarativeBase\n"
+            "class Base(DeclarativeBase):\n"
+            "    pass\n"
+        )
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(SystemExit) as exc:
+            main(["bare_models:Base", "-o", str(tmp_path / "out.html")])
+        assert exc.value.code == 1
