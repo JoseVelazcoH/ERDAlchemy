@@ -5,13 +5,13 @@ from __future__ import annotations
 import json
 import re
 
-from sqlalchemy_erd.html_renderer import (
-    render_html,
-    _build_entities_json,
-    _build_relations_json,
-)
-from sqlalchemy_erd.introspect import introspect_models
 from sqlalchemy_erd.force import force_directed_layout
+from sqlalchemy_erd.html_renderer import render_html
+from sqlalchemy_erd.introspect import introspect_models
+from sqlalchemy_erd.serialization import (
+    build_entities_json as _build_entities_json,
+    build_relations_json as _build_relations_json,
+)
 from sqlalchemy_erd.theme import get_theme
 
 

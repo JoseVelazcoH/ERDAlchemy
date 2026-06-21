@@ -5,6 +5,7 @@ from xml.sax.saxutils import escape
 
 from sqlalchemy_erd.introspect import TableInfo, RelationshipInfo
 from sqlalchemy_erd.layout import NODE_W, HEADER_H, FIELD_H, PAD, node_h
+from sqlalchemy_erd.serialization import build_entities_json, build_relations_json
 from sqlalchemy_erd.theme import Theme
 
 
@@ -16,8 +17,8 @@ def render_html(
     title: str = "ERD",
     node_w: int = NODE_W,
 ) -> str:
-    entities_js = _build_entities_json(tables, theme)
-    relations_js = _build_relations_json(relationships, tables, positions)
+    entities_js = build_entities_json(tables, theme)
+    relations_js = build_relations_json(relationships, tables, positions)
     positions_js = json.dumps({t.name: list(positions[t.name]) for t in tables})
     schema_colors_js = json.dumps({
         (s if s is not None else "_default"): c
@@ -482,61 +483,3 @@ render();
 </script>
 </body>
 </html>"""
-
-
-def _build_entities_json(
-    tables: list[TableInfo],
-    theme: Theme,
-) -> str:
-    entities = []
-    for t in tables:
-        fields = []
-        for col in t.columns:
-            name_color = (
-                theme.kind_colors.get("pk", "#5C2472") if col.is_pk
-                else "#9a3412" if col.is_fk
-                else theme.field_text_color
-            )
-            name_weight = "700" if col.is_pk else "400"
-            kind_color = theme.kind_colors.get(col.kind, "#9ca3af")
-            kind_label = theme.kind_labels.get(col.kind, col.kind)
-            if not col.is_pk and not col.is_fk and col.nullable:
-                kind_label += "?"
-
-            fields.append({
-                "name": col.name,
-                "nameColor": name_color,
-                "nameWeight": name_weight,
-                "kindColor": kind_color,
-                "kindLabel": kind_label,
-            })
-
-        header_color = theme.get_header_color(t.name)
-        entities.append({
-            "id": t.name,
-            "label": t.class_name,
-            "schema": t.schema,
-            "headerColor": header_color,
-            "hoverColor": theme.header_hover_color,
-            "fields": fields,
-        })
-    return json.dumps(entities)
-
-
-def _build_relations_json(
-    relationships: list[RelationshipInfo],
-    tables: list[TableInfo],
-    positions: dict[str, tuple[float, float]],
-) -> str:
-    table_names = {t.name for t in tables}
-    rels = []
-    for r in relationships:
-        if r.from_table in table_names and r.to_table in table_names:
-            rels.append({
-                "from": r.from_table,
-                "to": r.to_table,
-                "fromCard": r.from_card,
-                "toCard": r.to_card,
-                "fkCol": r.fk_column,
-            })
-    return json.dumps(rels)
