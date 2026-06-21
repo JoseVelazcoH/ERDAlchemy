@@ -105,6 +105,18 @@ class TestGenerateErd:
         with pytest.raises(ValueError, match="Unknown layout"):
             generate_erd(blog_base, output=str(tmp_path / "test.svg"), format="svg", layout="bad")
 
+    def test_default_layout_is_layered(self, blog_base, tmp_path):
+        out = tmp_path / "test.svg"
+        result = generate_erd(blog_base, output=str(out), format="svg")
+        assert isinstance(result, str)
+        assert "<svg" in result
+
+    def test_layered_layout_explicit(self, blog_base, tmp_path):
+        out = tmp_path / "test.svg"
+        result = generate_erd(blog_base, output=str(out), format="svg", layout="layered")
+        assert isinstance(result, str)
+        assert "<svg" in result
+
     def test_custom_force_params_accepted(self, blog_base, tmp_path):
         from sqlalchemy_erd import ForceParams
         out = tmp_path / "test.svg"
@@ -155,6 +167,27 @@ class TestCli:
         assert out_file.exists()
         content = out_file.read_text()
         assert "<svg" in content
+
+    def test_cli_layered_layout(self, tmp_path, monkeypatch):
+        models_file = tmp_path / "models.py"
+        models_file.write_text(
+            "from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column\n"
+            "from sqlalchemy import String, ForeignKey\n\n"
+            "class Base(DeclarativeBase):\n"
+            "    pass\n\n"
+            "class Parent(Base):\n"
+            "    __tablename__ = 'parent'\n"
+            "    id: Mapped[int] = mapped_column(primary_key=True)\n\n"
+            "class Child(Base):\n"
+            "    __tablename__ = 'child'\n"
+            "    id: Mapped[int] = mapped_column(primary_key=True)\n"
+            "    parent_id: Mapped[int] = mapped_column(ForeignKey('parent.id'))\n"
+        )
+        out_file = tmp_path / "out.svg"
+        monkeypatch.chdir(tmp_path)
+        main(["models:Base", "-f", "svg", "--layout", "layered", "-o", str(out_file)])
+        assert out_file.exists()
+        assert "<svg" in out_file.read_text()
 
     def test_cli_star_layout(self, tmp_path, monkeypatch):
         models_file = tmp_path / "models.py"
