@@ -9,8 +9,9 @@ from pathlib import Path
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
 
+from sqlalchemy_erd.force import ForceParams
 from sqlalchemy_erd.introspect import introspect_models
-from sqlalchemy_erd.layout import auto_node_width, ForceParams, NODE_W
+from sqlalchemy_erd.layout import auto_node_width, NODE_W
 from sqlalchemy_erd.layout_select import LayoutRequest, select_layout
 from sqlalchemy_erd.theme import get_theme, apply_schema_colors, THEMES
 from sqlalchemy_erd.export import to_svg, to_html, to_png, to_pdf

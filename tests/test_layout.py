@@ -2,40 +2,35 @@
 
 from __future__ import annotations
 
+from sqlalchemy_erd.force import force_directed_layout, ForceParams, Vec
+from sqlalchemy_erd.introspect import introspect_models, TableInfo, ColumnInfo, RelationshipInfo
 from sqlalchemy_erd.layout import (
-    force_directed_layout,
-    star_layout,
     auto_node_width,
     node_h,
-    ForceParams,
-    Vec,
     NODE_W,
     HEADER_H,
     FIELD_H,
     PAD,
 )
-from sqlalchemy_erd.introspect import introspect_models, TableInfo, ColumnInfo, RelationshipInfo
+from sqlalchemy_erd.star import star_layout
 
 
 # ── Vec ──────────────────────────────────────────────────────────────────────
 
 class TestVec:
-    def test_add(self):
-        result = Vec(1, 2) + Vec(3, 4)
-        assert result.x == 4 and result.y == 6
+    def test_vec_add_returns_componentwise_sum(self):
+        assert Vec(1, 2) + Vec(3, 4) == Vec(4, 6)
 
-    def test_sub(self):
-        result = Vec(5, 7) - Vec(2, 3)
-        assert result.x == 3 and result.y == 4
+    def test_vec_sub_returns_componentwise_difference(self):
+        assert Vec(5, 7) - Vec(2, 3) == Vec(3, 4)
 
-    def test_mul(self):
-        result = Vec(3, 4) * 2
-        assert result.x == 6 and result.y == 8
+    def test_vec_mul_scales_both_components(self):
+        assert Vec(3, 4) * 2 == Vec(6, 8)
 
-    def test_length(self):
+    def test_vec_length_of_3_4_is_5(self):
         assert Vec(3, 4).length() == 5.0
 
-    def test_length_zero(self):
+    def test_vec_length_of_zero_is_zero(self):
         assert Vec(0, 0).length() == 0.0
 
 

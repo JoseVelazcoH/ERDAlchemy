@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from sqlalchemy_erd.introspect import TableInfo, RelationshipInfo
-from sqlalchemy_erd.layout import force_directed_layout, NODE_W
+from sqlalchemy_erd.layout import NODE_W
 from sqlalchemy_erd.renderer import render_svg
 from sqlalchemy_erd.html_renderer import render_html
 from sqlalchemy_erd.theme import Theme

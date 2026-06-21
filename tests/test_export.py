@@ -5,7 +5,7 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 
 from sqlalchemy_erd.introspect import introspect_models
-from sqlalchemy_erd.layout import force_directed_layout
+from sqlalchemy_erd.force import force_directed_layout
 from sqlalchemy_erd.export import to_html, to_svg, to_png, to_pdf
 from sqlalchemy_erd.theme import get_theme
 

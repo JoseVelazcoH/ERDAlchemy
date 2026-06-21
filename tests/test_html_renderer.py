@@ -11,7 +11,7 @@ from sqlalchemy_erd.html_renderer import (
     _build_relations_json,
 )
 from sqlalchemy_erd.introspect import introspect_models
-from sqlalchemy_erd.layout import force_directed_layout
+from sqlalchemy_erd.force import force_directed_layout
 from sqlalchemy_erd.theme import get_theme
 
 
