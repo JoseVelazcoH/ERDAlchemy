@@ -75,7 +75,7 @@ generate_erd(Base, output="erd.svg", format="svg", node_width=400)
 
 ### Layered (default)
 
-Hierarchical layout that ranks tables into columns by foreign-key direction (parent → child, left to right), orders nodes within each column to reduce edge crossings, and stacks cards so they never overlap. The best general-purpose choice — especially for schemas with many tables or wide tables (10+ columns), where it reads like a hand-drawn ERD.
+Hierarchical layout that ranks tables into columns by foreign-key direction (parent → child, left to right), orders nodes within each column to reduce edge crossings, and stacks cards so they never overlap. The best general-purpose choice, especially for schemas with many tables or wide tables (10+ columns), where it reads like a hand-drawn ERD.
 
 ```python
 generate_erd(Base, output="erd.html", layout="layered")

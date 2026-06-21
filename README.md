@@ -1,8 +1,8 @@
 # erdalchemy
 
-Interactive ERD visualizer for SQLAlchemy 2.0 models. Point it at your `DeclarativeBase` and get a diagram — no manual configuration.
+Interactive ERD visualizer for SQLAlchemy 2.0 models. Point it at your `DeclarativeBase` and get a diagram, no manual configuration.
 
-![preview](https://raw.githubusercontent.com/JoseVelazcoH/ERDAlchemy/main/examples/blog/blog.png)
+<img src="https://raw.githubusercontent.com/JoseVelazcoH/ERDAlchemy/main/examples/blog/blog.png" alt="preview" width="520">
 
 - Drag-and-drop interactive HTML, with hover highlighting
 - Three layouts: hierarchical **layered** (default), force-directed, and star
@@ -52,17 +52,21 @@ generate_erd(Base, output="erd.html", layout="layered")
 
 ## Documentation
 
-Full reference — every CLI flag, the Python API, themes, layout tuning, card sizing, and supported column types — lives in [`docs/reference.md`](docs/reference.md).
+Full reference (every CLI flag, the Python API, themes, layout tuning, card sizing, and supported column types) lives in [`docs/reference.md`](docs/reference.md).
 
 ## Examples
 
 See [`examples/`](examples) for ready-to-run schemas:
 
-- [`blog/`](examples/blog) — blog schema (User, Post, Comment)
-- [`ecommerce/`](examples/ecommerce) — 1:N chains
-- [`university/`](examples/university) — N:N via association tables
-- [`hr/`](examples/hr) — 1:1 and 1:N
-- [`multi_schema/`](examples/multi_schema) — cross-schema FKs
+- [`blog/`](examples/blog) - blog schema (User, Post, Comment)
+- [`ecommerce/`](examples/ecommerce) - 1:N chains
+- [`university/`](examples/university) - N:N via association tables
+- [`hr/`](examples/hr) - 1:1 and 1:N
+- [`multi_schema/`](examples/multi_schema) - cross-schema FKs
+
+## Acknowledgments
+
+Inspired by [eralchemy2](https://github.com/maurerle/eralchemy2) (originally [eralchemy](https://github.com/Alexis-benoist/eralchemy)), which pioneered generating ER diagrams from SQLAlchemy models. erdalchemy reimagines the idea with a self-contained, interactive, dependency-free renderer.
 
 ## License
 
