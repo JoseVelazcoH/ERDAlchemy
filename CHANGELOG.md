@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.5.0](https://github.com/JoseVelazcoH/ERDAlchemy/compare/erdalchemy-v0.4.0...erdalchemy-v0.5.0) (2026-06-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* generate_erd no longer accepts k_repulse/k_attract/k_align/ideal_len kwargs; pass a ForceParams instance via the force= parameter instead.
+
+### Features
+
+* **introspect:** regex table and column filtering ([9b68050](https://github.com/JoseVelazcoH/ERDAlchemy/commit/9b680506952473386c1176eb3ee7f8e973fc32ce))
+* **introspect:** regex table and column filtering ([e16489f](https://github.com/JoseVelazcoH/ERDAlchemy/commit/e16489f241c3de088b0852ff45eeab9dfeeb0cb6)), closes [#11](https://github.com/JoseVelazcoH/ERDAlchemy/issues/11)
+* **layout:** add hierarchical layered layout as new default ([fd4047e](https://github.com/JoseVelazcoH/ERDAlchemy/commit/fd4047e8c0e13d438439baff3666242b9820434e)), closes [#36](https://github.com/JoseVelazcoH/ERDAlchemy/issues/36)
+* **layout:** hierarchical layered layout as new default ([f2aa6d2](https://github.com/JoseVelazcoH/ERDAlchemy/commit/f2aa6d24cee8f345dab05d98a88a9fde1cb81d70))
+* **renderer:** orthogonal edge routing with rounded corners ([d365062](https://github.com/JoseVelazcoH/ERDAlchemy/commit/d365062fc438c3ed31b540b04810699180a1daed))
+* **renderer:** orthogonal edge routing with rounded corners ([6bb6732](https://github.com/JoseVelazcoH/ERDAlchemy/commit/6bb673293ca09539b843c210333e5f6f0afa8fac)), closes [#38](https://github.com/JoseVelazcoH/ERDAlchemy/issues/38)
+* **render:** unify output formats behind a Renderer protocol + registry ([af38c64](https://github.com/JoseVelazcoH/ERDAlchemy/commit/af38c64607b2f1f53612c97d7c4e9a2dd8052132))
+* **render:** unify output formats behind a Renderer protocol + registry ([264cbfd](https://github.com/JoseVelazcoH/ERDAlchemy/commit/264cbfdf43778386de4a6228c8a00c0223c15cea)), closes [#13](https://github.com/JoseVelazcoH/ERDAlchemy/issues/13)
+
+
+### Bug Fixes
+
+* resolve column colors from theme and correct type annotations ([c0c1103](https://github.com/JoseVelazcoH/ERDAlchemy/commit/c0c1103c8693a93b3498a7fb39a592b82473fb66))
+* sync __version__ and add release-please marker ([aa5b0ca](https://github.com/JoseVelazcoH/ERDAlchemy/commit/aa5b0cacfebe8fb098b15dadb80c4bb00a1f8d9b))
+* sync __version__ with package version and add release-please marker ([7d1bd0e](https://github.com/JoseVelazcoH/ERDAlchemy/commit/7d1bd0e4219177b64bd759a5a8e05fbee41e69cb))
+
+
+### Refactors
+
+* address audit items — tests, SRP split, ForceParams ([b4b15c2](https://github.com/JoseVelazcoH/ERDAlchemy/commit/b4b15c290c1fc331a344ef7cf539b97d657b2f5c))
+
+
+### Documentation
+
+* add showcase example and use it as a centered 90% preview ([236df7f](https://github.com/JoseVelazcoH/ERDAlchemy/commit/236df7f8decb3ceb54b8232aa71eb637c184a10c)), closes [#36](https://github.com/JoseVelazcoH/ERDAlchemy/issues/36)
+* document layered layout and regenerate example diagrams ([9b78688](https://github.com/JoseVelazcoH/ERDAlchemy/commit/9b7868878e1f6bbb95c7dc3b04010315a1fdba36)), closes [#36](https://github.com/JoseVelazcoH/ERDAlchemy/issues/36)
+* mention orthogonal edge routing in README features ([d44a1fc](https://github.com/JoseVelazcoH/ERDAlchemy/commit/d44a1fc7618160cdc2c3329c61ece4c02d860db2)), closes [#38](https://github.com/JoseVelazcoH/ERDAlchemy/issues/38)
+* remove em dashes, shrink preview image, credit eralchemy2 ([d695494](https://github.com/JoseVelazcoH/ERDAlchemy/commit/d695494ed1342596e99665741cf961a64308a9b9)), closes [#36](https://github.com/JoseVelazcoH/ERDAlchemy/issues/36)
+* slim README to a front-door, move full reference to docs/reference.md ([dd1e362](https://github.com/JoseVelazcoH/ERDAlchemy/commit/dd1e36298de20e59b2886cc423ca21fa6805da03)), closes [#36](https://github.com/JoseVelazcoH/ERDAlchemy/issues/36)
+
 ## [0.4.0](https://github.com/JoseVelazcoH/ERDAlchemy/compare/erdalchemy-v0.3.0...erdalchemy-v0.4.0) (2026-05-19)
 
 
