@@ -207,6 +207,7 @@ def force_directed_layout(
 
 GAP_X = 60
 GAP_Y = 40
+MARGIN = 60.0
 
 
 def _grid_layout(

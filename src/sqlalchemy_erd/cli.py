@@ -10,9 +10,8 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
 
 from sqlalchemy_erd.introspect import introspect_models
-from sqlalchemy_erd.layout import (
-    force_directed_layout, star_layout, auto_node_width, ForceParams, NODE_W,
-)
+from sqlalchemy_erd.layout import auto_node_width, ForceParams, NODE_W
+from sqlalchemy_erd.layout_select import LayoutRequest, select_layout
 from sqlalchemy_erd.theme import get_theme, apply_schema_colors, THEMES
 from sqlalchemy_erd.export import to_svg, to_html, to_png, to_pdf
 
@@ -94,9 +93,12 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "--layout",
-        choices=["force", "star"],
-        default="force",
-        help="Layout algorithm: force (force-directed) or star (column-based) (default: force)",
+        choices=["layered", "force", "star"],
+        default="layered",
+        help=(
+            "Layout algorithm: layered (hierarchical), force (force-directed), "
+            "or star (column-based) (default: layered)"
+        ),
     )
     parser.add_argument(
         "--k-repulse", type=float, default=35000.0,
@@ -144,16 +146,17 @@ def main(argv: list[str] | None = None) -> None:
     else:
         node_w = NODE_W
 
-    if args.layout == "star":
-        positions = star_layout(tables, relationships, star_cols=args.star_cols, node_w=node_w)
-    else:
-        force = ForceParams(
-            k_repulse=args.k_repulse, k_attract=args.k_attract,
-            k_align=args.k_align, ideal_len=args.ideal_len,
-        )
-        positions = force_directed_layout(
-            tables, relationships, force=force, node_w=node_w,
-        )
+    force = ForceParams(
+        k_repulse=args.k_repulse, k_attract=args.k_attract,
+        k_align=args.k_align, ideal_len=args.ideal_len,
+    )
+    positions = select_layout(args.layout, LayoutRequest(
+        tables=tables,
+        relationships=relationships,
+        node_w=node_w,
+        star_cols=args.star_cols,
+        force=force,
+    ))
 
     output_path = args.output or f"erd.{args.format}"
 

@@ -9,9 +9,8 @@ from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase
 
 from sqlalchemy_erd.introspect import introspect_models
-from sqlalchemy_erd.layout import (
-    force_directed_layout, star_layout, auto_node_width, ForceParams, NODE_W,
-)
+from sqlalchemy_erd.layout import auto_node_width, ForceParams, NODE_W
+from sqlalchemy_erd.layout_select import LayoutRequest, select_layout
 from sqlalchemy_erd.theme import Theme, THEMES, get_theme, apply_schema_colors
 from sqlalchemy_erd.export import to_html, to_svg, to_png, to_pdf
 
@@ -27,7 +26,7 @@ def generate_erd(
     title: str = "ERD",
     scale: int = 2,
     schemas: list[str] | None = None,
-    layout: str = "force",
+    layout: str = "layered",
     star_cols: int | None = None,
     node_width: Union[int, str, None] = None,
     *,
@@ -44,16 +43,13 @@ def generate_erd(
     else:
         node_w = NODE_W
 
-    if layout == "star":
-        positions = star_layout(tables, relationships, star_cols=star_cols, node_w=node_w)
-    elif layout == "force":
-        positions = force_directed_layout(
-            tables, relationships,
-            force=force or ForceParams(),
-            node_w=node_w,
-        )
-    else:
-        raise ValueError(f"Unknown layout '{layout}'. Use: force, star")
+    positions = select_layout(layout, LayoutRequest(
+        tables=tables,
+        relationships=relationships,
+        node_w=node_w,
+        star_cols=star_cols,
+        force=force,
+    ))
 
     if format == "html":
         content = to_html(tables, relationships, positions, resolved_theme, title=title, node_w=node_w)
