@@ -56,18 +56,18 @@ generate_erd(Base, output="erd.html", layout="layered")
 
 ## Documentation
 
-Full reference (every CLI flag, the Python API, themes, layout tuning, card sizing, and supported column types) lives in [`docs/reference.md`](docs/reference.md).
+Full reference (every CLI flag, the Python API, themes, layout tuning, card sizing, and supported column types) lives in [`docs/reference.md`](https://github.com/JoseVelazcoH/ERDAlchemy/blob/main/docs/reference.md).
 
 ## Examples
 
-See [`examples/`](examples) for ready-to-run schemas:
+See [`examples/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples) for ready-to-run schemas:
 
-- [`showcase/`](examples/showcase) - 12 tables across four FK levels (the preview above)
-- [`blog/`](examples/blog) - blog schema (User, Post, Comment)
-- [`ecommerce/`](examples/ecommerce) - 1:N chains
-- [`university/`](examples/university) - N:N via association tables
-- [`hr/`](examples/hr) - 1:1 and 1:N
-- [`multi_schema/`](examples/multi_schema) - cross-schema FKs
+- [`showcase/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/showcase) - 12 tables across four FK levels (the preview above)
+- [`blog/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/blog) - blog schema (User, Post, Comment)
+- [`ecommerce/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/ecommerce) - 1:N chains
+- [`university/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/university) - N:N via association tables
+- [`hr/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/hr) - 1:1 and 1:N
+- [`multi_schema/`](https://github.com/JoseVelazcoH/ERDAlchemy/tree/main/examples/multi_schema) - cross-schema FKs
 
 ## Acknowledgments
 
