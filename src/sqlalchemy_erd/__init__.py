@@ -14,7 +14,7 @@ from sqlalchemy_erd.layout_select import LayoutRequest, select_layout
 from sqlalchemy_erd.render import RenderRequest, render, write_output
 from sqlalchemy_erd.theme import Theme, THEMES, get_theme, apply_schema_colors
 
-__version__ = "0.1.1"
+__version__ = "0.3.0"  # x-release-please-version
 
 
 def generate_erd(
