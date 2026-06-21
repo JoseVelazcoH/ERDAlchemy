@@ -2,7 +2,9 @@
 
 Interactive ERD visualizer for SQLAlchemy 2.0 models. Point it at your `DeclarativeBase` and get a diagram, no manual configuration.
 
-<img src="https://raw.githubusercontent.com/JoseVelazcoH/ERDAlchemy/main/examples/blog/blog.png" alt="preview" width="520">
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JoseVelazcoH/ERDAlchemy/main/examples/showcase/showcase.png" alt="preview" width="90%">
+</p>
 
 - Drag-and-drop interactive HTML, with hover highlighting
 - Three layouts: hierarchical **layered** (default), force-directed, and star
@@ -58,6 +60,7 @@ Full reference (every CLI flag, the Python API, themes, layout tuning, card sizi
 
 See [`examples/`](examples) for ready-to-run schemas:
 
+- [`showcase/`](examples/showcase) - 12 tables across four FK levels (the preview above)
 - [`blog/`](examples/blog) - blog schema (User, Post, Comment)
 - [`ecommerce/`](examples/ecommerce) - 1:N chains
 - [`university/`](examples/university) - N:N via association tables
