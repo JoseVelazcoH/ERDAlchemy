@@ -13,8 +13,8 @@ from sqlalchemy_erd.force import ForceParams
 from sqlalchemy_erd.introspect import Filters, introspect_models
 from sqlalchemy_erd.layout import auto_node_width, NODE_W
 from sqlalchemy_erd.layout_select import LayoutRequest, select_layout
+from sqlalchemy_erd.render import RenderRequest, render, write_output
 from sqlalchemy_erd.theme import get_theme, apply_schema_colors, THEMES
-from sqlalchemy_erd.export import to_svg, to_html, to_png, to_pdf
 
 
 def _resolve_target(spec: str) -> type[DeclarativeBase] | MetaData:
@@ -178,18 +178,17 @@ def main(argv: list[str] | None = None) -> None:
 
     output_path = args.output or f"erd.{args.format}"
 
-    if args.format == "html":
-        content = to_html(tables, relationships, positions, theme, title=args.title, node_w=node_w)
-        Path(output_path).write_text(content, encoding="utf-8")
-    elif args.format == "svg":
-        content = to_svg(tables, relationships, positions, theme, node_w=node_w)
-        Path(output_path).write_text(content, encoding="utf-8")
-    elif args.format == "png":
-        data = to_png(tables, relationships, positions, theme, scale=args.scale, node_w=node_w)
-        Path(output_path).write_bytes(data)
-    elif args.format == "pdf":
-        data = to_pdf(tables, relationships, positions, theme, node_w=node_w)
-        Path(output_path).write_bytes(data)
+    result = render(args.format, RenderRequest(
+        tables=tables,
+        relationships=relationships,
+        positions=positions,
+        theme=theme,
+        node_w=node_w,
+        title=args.title,
+        scale=args.scale,
+    ))
+
+    write_output(output_path, result)
 
     print(f"Generated {output_path}")
 
