@@ -7,6 +7,7 @@ from sqlalchemy_erd.layout import (
     star_layout,
     auto_node_width,
     node_h,
+    ForceParams,
     Vec,
     NODE_W,
     HEADER_H,
@@ -113,6 +114,25 @@ class TestForceDirectedLayout:
         pos1 = force_directed_layout(tables, rels, seed=42)
         pos2 = force_directed_layout(tables, rels, seed=99)
         assert pos1 != pos2
+
+    def test_accepts_force_params(self, blog_base):
+        tables, rels = introspect_models(blog_base)
+        positions = force_directed_layout(
+            tables, rels, force=ForceParams(ideal_len=400.0),
+        )
+        assert set(positions) == {t.name for t in tables}
+
+    def test_force_params_change_layout(self, blog_base):
+        tables, rels = introspect_models(blog_base)
+        tight = force_directed_layout(tables, rels, seed=42, force=ForceParams(ideal_len=100.0))
+        loose = force_directed_layout(tables, rels, seed=42, force=ForceParams(ideal_len=600.0))
+        assert tight != loose
+
+    def test_force_params_defaults_match_legacy(self):
+        params = ForceParams()
+        assert (params.k_repulse, params.k_attract, params.k_align, params.ideal_len) == (
+            35000.0, 0.1, 0.02, 280.0,
+        )
 
     def test_connected_tables_closer(self, blog_base):
         tables, rels = introspect_models(blog_base)
