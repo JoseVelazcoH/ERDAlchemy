@@ -7,16 +7,12 @@ cards overlap by construction — the same strategy Graphviz ``dot`` uses, witho
 taking a Graphviz dependency.
 """
 
-from __future__ import annotations
-
 from collections import defaultdict
 
+from sqlalchemy_erd.constants.geometry import GAP_X, GAP_Y, MARGIN, NODE_W
+from sqlalchemy_erd.constants.layered import BARYCENTER_SWEEPS, DISCONNECTED_ROW_GAP
 from sqlalchemy_erd.introspect import RelationshipInfo, TableInfo
-from sqlalchemy_erd.layout import GAP_X, GAP_Y, MARGIN, NODE_W, node_h
-
-BARYCENTER_SWEEPS = 4
-# Vertical gap between the connected graph and the disconnected-tables row.
-DISCONNECTED_ROW_GAP = GAP_Y * 2
+from sqlalchemy_erd.layout import node_h
 
 _VISITING = "visiting"
 _DONE = "done"

@@ -1,17 +1,9 @@
 """Tests for sqlalchemy_erd.layout — force-directed algorithm, star layout, node sizing."""
 
-from __future__ import annotations
-
+from sqlalchemy_erd.constants.geometry import FIELD_H, HEADER_H, NODE_W, PAD
 from sqlalchemy_erd.force import force_directed_layout, ForceParams, Vec
 from sqlalchemy_erd.introspect import introspect_models, TableInfo, ColumnInfo, RelationshipInfo
-from sqlalchemy_erd.layout import (
-    auto_node_width,
-    node_h,
-    NODE_W,
-    HEADER_H,
-    FIELD_H,
-    PAD,
-)
+from sqlalchemy_erd.layout import auto_node_width, node_h
 from sqlalchemy_erd.star import star_layout
 
 

@@ -5,15 +5,13 @@ name → algorithm mapping lives in exactly one place. Adding a layout means
 registering one entry in ``LAYOUTS`` — no caller needs to change (OCP).
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Callable
 
+from sqlalchemy_erd.constants.geometry import NODE_W
 from sqlalchemy_erd.force import force_directed_layout, ForceParams
 from sqlalchemy_erd.introspect import RelationshipInfo, TableInfo
 from sqlalchemy_erd.layered import layered_layout
-from sqlalchemy_erd.layout import NODE_W
 from sqlalchemy_erd.star import star_layout
 
 Positions = dict[str, tuple[float, float]]

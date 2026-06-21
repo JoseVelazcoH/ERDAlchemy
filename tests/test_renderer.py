@@ -1,7 +1,5 @@
 """Tests for sqlalchemy_erd.renderer — SVG output validity and structure."""
 
-from __future__ import annotations
-
 import xml.etree.ElementTree as ET
 
 from sqlalchemy_erd.force import force_directed_layout

@@ -1,23 +1,16 @@
-from __future__ import annotations
-
 from xml.sax.saxutils import escape
 
+from sqlalchemy_erd.constants.geometry import FIELD_H, HEADER_H, NODE_W, PAD
+from sqlalchemy_erd.constants.styling import (
+    CARD_RADIUS, FIELD_FONT_SIZE, FIELD_INSET, HEADER_STRIP_H, KIND_FONT_SIZE,
+    KIND_INSET, TITLE_FONT_SIZE, TITLE_INSET,
+)
 from sqlalchemy_erd.edge_routing import orthogonal_path
 from sqlalchemy_erd.introspect import TableInfo, RelationshipInfo
-from sqlalchemy_erd.layout import NODE_W, HEADER_H, FIELD_H, PAD, node_h
+from sqlalchemy_erd.layout import node_h
 from sqlalchemy_erd.theme import Theme
 
 Side = str
-
-# Card visual styling (px). Mirrored by the interactive renderer in html_renderer.py.
-CARD_RADIUS = 7          # rounded-corner radius of the card and header
-HEADER_STRIP_H = 7       # square-off strip under the rounded header
-TITLE_FONT_SIZE = 13     # table title in the header
-FIELD_FONT_SIZE = 10     # column name
-KIND_FONT_SIZE = 9       # column type label
-TITLE_INSET = 12         # left inset of the title text
-FIELD_INSET = 10         # left inset of the column name / separator line
-KIND_INSET = 8           # right inset of the type label
 
 
 def _best_side(

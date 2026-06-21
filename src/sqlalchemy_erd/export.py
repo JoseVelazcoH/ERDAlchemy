@@ -1,9 +1,7 @@
 """Backward-compatible ``to_<format>`` helpers; thin adapters over the renderers."""
 
-from __future__ import annotations
-
+from sqlalchemy_erd.constants.geometry import NODE_W
 from sqlalchemy_erd.introspect import RelationshipInfo, TableInfo
-from sqlalchemy_erd.layout import NODE_W
 from sqlalchemy_erd.render import (
     HtmlRenderer, PdfRenderer, PngRenderer, Positions, RenderRequest, SvgRenderer,
 )

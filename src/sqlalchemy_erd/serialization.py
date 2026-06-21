@@ -1,7 +1,5 @@
 """Serialize tables and relationships to the JSON payloads the interactive HTML embeds."""
 
-from __future__ import annotations
-
 import json
 
 from sqlalchemy_erd.introspect import RelationshipInfo, TableInfo
