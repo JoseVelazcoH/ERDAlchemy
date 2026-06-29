@@ -273,3 +273,33 @@ class Task(MultiFkBase):
 @pytest.fixture
 def multi_fk_base():
     return MultiFkBase
+
+
+# -- View schemas -------------------------------------------------------------
+
+view_metadata = MetaData()
+
+Table(
+    "users", view_metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(100), nullable=False),
+)
+
+Table(
+    "active_users", view_metadata,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id")),
+    info={"view": True},
+)
+
+Table(
+    "monthly_users", view_metadata,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id")),
+    info={"materialized_view": True},
+)
+
+
+@pytest.fixture
+def view_metadata_fixture():
+    return view_metadata

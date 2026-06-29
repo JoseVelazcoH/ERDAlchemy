@@ -354,3 +354,18 @@ class TestIntrospectMultiSchema:
         tables, _ = introspect_models(multi_schema_metadata_fixture)
         schemas = {t.schema for t in tables}
         assert schemas == {"auth", "billing"}
+
+
+# -- Views --------------------------------------------------------------------
+
+class TestIntrospectViews:
+    def test_views_are_marked(self, view_metadata_fixture):
+        tables, _ = introspect_models(view_metadata_fixture)
+        kinds = {t.name: t.kind for t in tables}
+        assert kinds["active_users"] == "view"
+        assert kinds["monthly_users"] == "materialized_view"
+
+    def test_views_can_be_excluded(self, view_metadata_fixture):
+        tables, rels = introspect_models(view_metadata_fixture, include_views=False)
+        assert {t.name for t in tables} == {"users"}
+        assert rels == []
