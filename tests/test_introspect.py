@@ -354,3 +354,23 @@ class TestIntrospectMultiSchema:
         tables, _ = introspect_models(multi_schema_metadata_fixture)
         schemas = {t.schema for t in tables}
         assert schemas == {"auth", "billing"}
+
+
+# -- Unique constraints and indexes ------------------------------------------
+
+class TestIntrospectConstraints:
+    def test_unique_columns_are_marked(self, constraints_metadata_fixture):
+        tables, _ = introspect_models(constraints_metadata_fixture)
+        accounts = next(t for t in tables if t.name == "accounts")
+        unique_cols = {c.name for c in accounts.columns if c.is_unique}
+        assert {"email", "username"}.issubset(unique_cols)
+
+    def test_indexes_are_opt_in(self, constraints_metadata_fixture):
+        tables, _ = introspect_models(constraints_metadata_fixture)
+        accounts = next(t for t in tables if t.name == "accounts")
+        assert not any(c.is_indexed for c in accounts.columns)
+
+        tables, _ = introspect_models(constraints_metadata_fixture, show_indexes=True)
+        accounts = next(t for t in tables if t.name == "accounts")
+        indexed_cols = {c.name for c in accounts.columns if c.is_indexed}
+        assert indexed_cols == {"slug", "external_id"}

@@ -26,6 +26,10 @@ def build_entities_json(tables: list[TableInfo], theme: Theme) -> str:
             kind_label = theme.kind_labels.get(col.kind, col.kind)
             if not col.is_pk and not col.is_fk and col.nullable:
                 kind_label += "?"
+            if col.is_unique:
+                kind_label += " U"
+            elif col.is_indexed:
+                kind_label += " IDX"
 
             fields.append({
                 "name": col.name,
@@ -33,6 +37,8 @@ def build_entities_json(tables: list[TableInfo], theme: Theme) -> str:
                 "nameWeight": name_weight,
                 "kindColor": kind_color,
                 "kindLabel": kind_label,
+                "isUnique": col.is_unique,
+                "isIndexed": col.is_indexed,
             })
 
         entities.append({
