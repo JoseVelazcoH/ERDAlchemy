@@ -60,6 +60,8 @@ def build_relations_json(
             "fromCard": r.from_card,
             "toCard": r.to_card,
             "fkCol": r.fk_column,
+            "kind": r.kind,
+            "label": r.label,
         }
         for r in relationships
         if r.from_table in table_names and r.to_table in table_names

@@ -273,3 +273,32 @@ class Task(MultiFkBase):
 @pytest.fixture
 def multi_fk_base():
     return MultiFkBase
+
+
+# -- Joined-table inheritance schema -----------------------------------------
+
+class InheritanceBase(DeclarativeBase):
+    pass
+
+
+class Employee(InheritanceBase):
+    __tablename__ = "employees"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(50))
+    name: Mapped[str] = mapped_column(String(100))
+    __mapper_args__ = {
+        "polymorphic_on": kind,
+        "polymorphic_identity": "employee",
+    }
+
+
+class Manager(Employee):
+    __tablename__ = "managers"
+    id: Mapped[int] = mapped_column(ForeignKey("employees.id"), primary_key=True)
+    department: Mapped[str] = mapped_column(String(100))
+    __mapper_args__ = {"polymorphic_identity": "manager"}
+
+
+@pytest.fixture
+def inheritance_base():
+    return InheritanceBase

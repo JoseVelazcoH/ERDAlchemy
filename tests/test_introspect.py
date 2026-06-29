@@ -354,3 +354,23 @@ class TestIntrospectMultiSchema:
         tables, _ = introspect_models(multi_schema_metadata_fixture)
         schemas = {t.schema for t in tables}
         assert schemas == {"auth", "billing"}
+
+
+# -- SQLAlchemy inheritance ---------------------------------------------------
+
+class TestIntrospectInheritance:
+    def test_joined_inheritance_edge_is_distinct(self, inheritance_base):
+        _, rels = introspect_models(inheritance_base)
+        inheritance = [r for r in rels if r.kind == "inheritance"]
+        assert len(inheritance) == 1
+        rel = inheritance[0]
+        assert rel.from_table == "employees"
+        assert rel.to_table == "managers"
+        assert rel.from_card == "1"
+        assert rel.to_card == "1"
+        assert rel.label == "joined"
+
+    def test_joined_inheritance_does_not_duplicate_fk_edge(self, inheritance_base):
+        _, rels = introspect_models(inheritance_base)
+        pairs = [(r.from_table, r.to_table) for r in rels]
+        assert pairs.count(("employees", "managers")) == 1
