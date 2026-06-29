@@ -1,8 +1,6 @@
 """Tests for the public generate_erd API and CLI."""
 
-import os
 import pytest
-from pathlib import Path
 
 from sqlalchemy_erd import generate_erd
 from sqlalchemy_erd.cli import main, _resolve_target

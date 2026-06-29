@@ -4,9 +4,6 @@ from sqlalchemy_erd.introspect import (
     introspect_models,
     _classify_type,
     _column_kind,
-    ColumnInfo,
-    TableInfo,
-    RelationshipInfo,
 )
 from sqlalchemy import (
     ARRAY, Integer, String, Text, Float, Boolean, Enum, JSON, DateTime, Date,

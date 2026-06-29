@@ -2,9 +2,9 @@
 
 import pytest
 from sqlalchemy import (
-    ARRAY, Column, Enum, ForeignKey, Integer, Interval, LargeBinary,
+    Column, Enum, ForeignKey, Integer, Interval, LargeBinary,
     String, Text, DateTime, Boolean, Float, Numeric, JSON, BigInteger,
-    SmallInteger, Date, Time, Uuid, Table, MetaData,
+    SmallInteger, Date, Time, Table, MetaData,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import datetime, timedelta, time
