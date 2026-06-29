@@ -163,3 +163,19 @@ class TestThemeRendering:
         theme = get_theme("default", table_colors={"users": "#ff0000"})
         svg = render_svg(tables, rels, positions, theme)
         assert "#ff0000" in svg
+
+
+# -- Unique/index rendering ---------------------------------------------------
+
+class TestConstraintRendering:
+    def test_unique_badge_renders_in_svg(self, constraints_metadata_fixture):
+        tables, rels = introspect_models(constraints_metadata_fixture)
+        positions = force_directed_layout(tables, rels)
+        svg = render_svg(tables, rels, positions, get_theme("default"))
+        assert "string? U" in svg
+
+    def test_index_badge_renders_when_enabled(self, constraints_metadata_fixture):
+        tables, rels = introspect_models(constraints_metadata_fixture, show_indexes=True)
+        positions = force_directed_layout(tables, rels)
+        svg = render_svg(tables, rels, positions, get_theme("default"))
+        assert "string? IDX" in svg

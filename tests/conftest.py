@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import (
     ARRAY, Column, Enum, ForeignKey, Integer, Interval, LargeBinary,
     String, Text, DateTime, Boolean, Float, Numeric, JSON, BigInteger,
-    SmallInteger, Date, Time, Uuid, Table, MetaData,
+    SmallInteger, Date, Time, Uuid, Table, MetaData, UniqueConstraint, Index,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import datetime, timedelta, time
@@ -273,3 +273,24 @@ class Task(MultiFkBase):
 @pytest.fixture
 def multi_fk_base():
     return MultiFkBase
+
+
+# -- Unique/index schema ------------------------------------------------------
+
+constraints_metadata = MetaData()
+
+accounts = Table(
+    "accounts", constraints_metadata,
+    Column("id", Integer, primary_key=True),
+    Column("email", String(200), unique=True),
+    Column("username", String(100)),
+    Column("slug", String(100), index=True),
+    Column("external_id", String(100)),
+    UniqueConstraint("username"),
+)
+Index("ix_accounts_external_id", accounts.c.external_id)
+
+
+@pytest.fixture
+def constraints_metadata_fixture():
+    return constraints_metadata

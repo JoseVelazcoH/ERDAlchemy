@@ -95,6 +95,20 @@ class TestBuildEntitiesJson:
         entities = json.loads(_build_entities_json(tables, theme))
         assert _entity(entities, "users")["headerColor"] == "#ff0000"
 
+    def test_unique_badge_is_serialized(self, constraints_metadata_fixture):
+        tables, _ = introspect_models(constraints_metadata_fixture)
+        entities = json.loads(_build_entities_json(tables, get_theme("default")))
+        email = _field(_entity(entities, "accounts"), "email")
+        assert email["isUnique"] is True
+        assert email["kindLabel"].endswith(" U")
+
+    def test_index_badge_is_serialized_when_enabled(self, constraints_metadata_fixture):
+        tables, _ = introspect_models(constraints_metadata_fixture, show_indexes=True)
+        entities = json.loads(_build_entities_json(tables, get_theme("default")))
+        slug = _field(_entity(entities, "accounts"), "slug")
+        assert slug["isIndexed"] is True
+        assert slug["kindLabel"].endswith(" IDX")
+
 
 # ── _build_relations_json ────────────────────────────────────────────────────
 
