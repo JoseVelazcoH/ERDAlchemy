@@ -109,7 +109,7 @@ class TestBuildRelationsJson:
         tables, rels = introspect_models(blog_base)
         positions = force_directed_layout(tables, rels)
         parsed = json.loads(_build_relations_json(rels, tables, positions))
-        assert set(parsed[0]) == {"from", "to", "fromCard", "toCard", "fkCol"}
+        assert set(parsed[0]) == {"from", "to", "fromCard", "toCard", "fkCol", "kind", "label"}
 
     def test_via_relation_keeps_via_prefix(self, m2m_base):
         tables, rels = introspect_models(m2m_base)
@@ -124,6 +124,13 @@ class TestBuildRelationsJson:
         kept = [t for t in tables if t.name != "comments"]
         parsed = json.loads(_build_relations_json(rels, kept, positions))
         assert all(r["from"] != "comments" and r["to"] != "comments" for r in parsed)
+
+    def test_inheritance_relation_serializes_kind_and_label(self, inheritance_base):
+        tables, rels = introspect_models(inheritance_base)
+        positions = force_directed_layout(tables, rels)
+        parsed = json.loads(_build_relations_json(rels, tables, positions))
+        rel = next(r for r in parsed if r["kind"] == "inheritance")
+        assert rel["label"] == "joined"
 
 
 # ── render_html ──────────────────────────────────────────────────────────────

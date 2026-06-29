@@ -163,3 +163,20 @@ class TestThemeRendering:
         theme = get_theme("default", table_colors={"users": "#ff0000"})
         svg = render_svg(tables, rels, positions, theme)
         assert "#ff0000" in svg
+
+
+# -- Inheritance rendering ----------------------------------------------------
+
+class TestInheritanceRendering:
+    def test_inheritance_edge_has_distinct_kind_and_marker(self, inheritance_base):
+        tables, rels = introspect_models(inheritance_base)
+        positions = force_directed_layout(tables, rels)
+        svg = render_svg(tables, rels, positions, get_theme("default"))
+        root = ET.fromstring(svg)
+        rel_groups = [g for g in root.findall("svg:g", NS) if g.get("data-kind") == "inheritance"]
+        assert len(rel_groups) == 1
+        edge = rel_groups[0].find("svg:path[@class='erd-edge']", NS)
+        assert edge.get("marker-end") == "url(#inherit)"
+        assert edge.get("stroke-dasharray") == "3 4"
+        text = " ".join(t.text or "" for t in root.iter("{http://www.w3.org/2000/svg}text"))
+        assert "joined" in text

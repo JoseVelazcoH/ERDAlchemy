@@ -259,6 +259,10 @@ function render() {{
   el('polygon', {{ points:'0 0, 10 3.5, 0 7', fill: THEME.edgeColor }}, mk);
   const mkHi = el('marker', {{ id:'arr-hi', markerWidth:'10', markerHeight:'7', refX:'9', refY:'3.5', orient:'auto' }}, defs);
   el('polygon', {{ points:'0 0, 10 3.5, 0 7', fill: THEME.hiColor }}, mkHi);
+  const mkInherit = el('marker', {{ id:'inherit', markerWidth:'12', markerHeight:'10', refX:'11', refY:'5', orient:'auto' }}, defs);
+  el('polygon', {{ points:'1 1, 11 5, 1 9', fill: THEME.bgColor, stroke: THEME.edgeColor, 'stroke-width':'1.4' }}, mkInherit);
+  const mkInheritHi = el('marker', {{ id:'inherit-hi', markerWidth:'12', markerHeight:'10', refX:'11', refY:'5', orient:'auto' }}, defs);
+  el('polygon', {{ points:'1 1, 11 5, 1 9', fill: THEME.bgColor, stroke: THEME.hiColor, 'stroke-width':'1.8' }}, mkInheritHi);
 
   el('rect', {{ width:'100%', height:'100%', fill: THEME.bgColor }}, svg);
   el('rect', {{ width:'100%', height:'100%', fill:'url(#erd-dots)' }}, svg);
@@ -293,18 +297,20 @@ function render() {{
     }}
 
     const d = makePath(fp, fs, tp, ts);
+    const isInheritance = rel.kind === 'inheritance';
     const isNN = rel.fromCard === 'N' && rel.toCard === 'N';
     const isCross = Object.keys(SCHEMA_COLORS).length > 0 &&
       (fe.schema != null ? fe.schema : '_default') !== (te.schema != null ? te.schema : '_default');
 
-    const g = el('g', {{ 'data-rel-from': rel.from, 'data-rel-to': rel.to }}, svg);
+    const g = el('g', {{ 'data-rel-from': rel.from, 'data-rel-to': rel.to, 'data-rel-kind': rel.kind }}, svg);
     el('path', {{ d, fill:'none', stroke:'transparent', 'stroke-width':'18' }}, g);
     const edgeAttrs = {{
       class: 'erd-edge', d, fill:'none',
       stroke: THEME.edgeColor, 'stroke-width': '1.5',
-      'marker-end': 'url(#arr)'
+      'marker-end': isInheritance ? 'url(#inherit)' : 'url(#arr)'
     }};
-    if (isNN) edgeAttrs['stroke-dasharray'] = '5 3';
+    if (isInheritance) edgeAttrs['stroke-dasharray'] = '3 4';
+    else if (isNN) edgeAttrs['stroke-dasharray'] = '5 3';
     else if (isCross) edgeAttrs['stroke-dasharray'] = '8 4';
     el('path', edgeAttrs, g);
 
@@ -320,6 +326,13 @@ function render() {{
       fill: THEME.edgeColor, 'text-anchor':'middle', 'dominant-baseline':'middle',
       textContent: rel.toCard
     }}, g);
+    if (rel.label) {{
+      el('text', {{
+        class: 'erd-label', x: (fp[0] + tp[0]) / 2, y: (fp[1] + tp[1]) / 2 - 8,
+        'font-size':'10', 'font-family':'monospace', fill: THEME.edgeColor,
+        'text-anchor':'middle', 'dominant-baseline':'middle', textContent: rel.label
+      }}, g);
+    }}
   }}
 
   // Nodes — tagged with data attributes for updateHighlights
@@ -390,11 +403,13 @@ function updateHighlights() {{
     const from = g.getAttribute('data-rel-from');
     const to = g.getAttribute('data-rel-to');
     const hi = hoveredId && (from === hoveredId || to === hoveredId);
+    const kind = g.getAttribute('data-rel-kind');
     const edge = g.querySelector('.erd-edge');
     if (edge) {{
       edge.setAttribute('stroke', hi ? THEME.hiColor : THEME.edgeColor);
       edge.setAttribute('stroke-width', hi ? '2' : '1.5');
-      edge.setAttribute('marker-end', `url(#${{hi ? 'arr-hi' : 'arr'}})`);
+      const marker = kind === 'inheritance' ? (hi ? 'inherit-hi' : 'inherit') : (hi ? 'arr-hi' : 'arr');
+      edge.setAttribute('marker-end', `url(#${{marker}})`);
     }}
     g.querySelectorAll('.erd-label').forEach(lbl => {{
       lbl.setAttribute('fill', hi ? THEME.hiColor : THEME.edgeColor);
