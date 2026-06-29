@@ -26,6 +26,7 @@ class TableInfo:
     class_name: str
     schema: str | None = None
     columns: list[ColumnInfo] = field(default_factory=list)
+    kind: str = "table"
 
 
 @dataclass
@@ -112,23 +113,51 @@ def _column_kind(col_info: Any, is_pk: bool, is_fk: bool) -> str:
 
 def _resolve_metadata(
     base_or_metadata: type[DeclarativeBase] | MetaData,
-) -> tuple[MetaData, dict[str, str]]:
-    """Return the metadata and a table-fullname → mapped-class-name lookup."""
+) -> tuple[MetaData, dict[str, str], dict[str, type]]:
+    """Return metadata and mapper-derived lookups when available."""
     if isinstance(base_or_metadata, MetaData):
-        return base_or_metadata, {}
+        return base_or_metadata, {}, {}
 
     metadata = base_or_metadata.metadata
+    mappers = list(base_or_metadata.registry.mappers)
     class_names = {
         mapper.local_table.fullname: mapper.class_.__name__
-        for mapper in base_or_metadata.registry.mappers
+        for mapper in mappers
     }
-    return metadata, class_names
+    mapped_classes = {
+        mapper.local_table.fullname: mapper.class_
+        for mapper in mappers
+    }
+    return metadata, class_names, mapped_classes
+
+
+def _table_kind(table_key: str, table: Any, mapped_classes: dict[str, type]) -> str:
+    cls = mapped_classes.get(table_key)
+    info_kind = table.info.get("erd_kind") or table.info.get("kind")
+    if info_kind in {"view", "materialized_view"}:
+        return info_kind
+    if (
+        table.info.get("materialized_view")
+        or table.info.get("is_materialized_view")
+        or table.info.get("__materialized_view__")
+        or (cls is not None and getattr(cls, "__materialized_view__", False))
+    ):
+        return "materialized_view"
+    if (
+        table.info.get("view")
+        or table.info.get("is_view")
+        or table.info.get("__view__")
+        or (cls is not None and getattr(cls, "__view__", False))
+    ):
+        return "view"
+    return "table"
 
 
 def _build_table(
     table_key: str,
     table: Any,
     class_names: dict[str, str],
+    mapped_classes: dict[str, type],
     multi_schema: bool,
     exclude_columns: list[re.Pattern[str]] | None = None,
 ) -> TableInfo:
@@ -159,6 +188,7 @@ def _build_table(
         class_name=display_name,
         schema=table.schema,
         columns=columns,
+        kind=_table_kind(table_key, table, mapped_classes),
     )
 
 
@@ -235,8 +265,9 @@ def introspect_models(
     base_or_metadata: type[DeclarativeBase] | MetaData,
     schemas: list[str] | None = None,
     filters: Filters | None = None,
+    include_views: bool = True,
 ) -> tuple[list[TableInfo], list[RelationshipInfo]]:
-    metadata, class_names = _resolve_metadata(base_or_metadata)
+    metadata, class_names, mapped_classes = _resolve_metadata(base_or_metadata)
     filters = filters or Filters()
     include = _compile(filters.include_tables)
     exclude = _compile(filters.exclude_tables)
@@ -247,11 +278,14 @@ def introspect_models(
         for key, table in sorted(metadata.tables.items())
         if (schemas is None or table.schema in schemas)
         and _is_table_kept(table.name, include, exclude)
+        and (include_views or _table_kind(key, table, mapped_classes) == "table")
     ]
     multi_schema = len({table.schema for _, table in filtered_items}) > 1
 
     tables = [
-        _build_table(table_key, table, class_names, multi_schema, exclude_columns)
+        _build_table(
+            table_key, table, class_names, mapped_classes, multi_schema, exclude_columns,
+        )
         for table_key, table in filtered_items
     ]
     relationships = _build_relationships(filtered_items)

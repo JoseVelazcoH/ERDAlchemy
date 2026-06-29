@@ -28,12 +28,13 @@ def generate_erd(
     layout: str = "layered",
     star_cols: int | None = None,
     node_width: Union[int, str, None] = None,
+    include_views: bool = True,
     *,
     force: ForceParams | None = None,
     filters: Filters | None = None,
 ) -> Union[str, bytes]:
     tables, relationships = introspect_models(
-        base_or_metadata, schemas=schemas, filters=filters,
+        base_or_metadata, schemas=schemas, filters=filters, include_views=include_views,
     )
     resolved_theme = get_theme(theme, table_colors)
     apply_schema_colors(resolved_theme, tables)

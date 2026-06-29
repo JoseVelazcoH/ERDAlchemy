@@ -331,13 +331,16 @@ function render() {{
       transform: `translate(${{x}}, ${{y}})`,
       style: 'cursor: grab',
       'data-id': entity.id,
+      'data-kind': entity.kind,
     }}, svg);
 
     el('rect', {{ x:'3', y:'3', rx:'7', width: NODE_W, height: h, fill:'rgba(0,0,0,0.06)' }}, g);
-    el('rect', {{
+    const cardAttrs = {{
       class: 'erd-card', rx:'7', width: NODE_W, height: h,
       fill: THEME.cardBg, stroke: THEME.cardBorder, 'stroke-width': '1'
-    }}, g);
+    }};
+    if (entity.kind !== 'table') cardAttrs['stroke-dasharray'] = '6 3';
+    el('rect', cardAttrs, g);
     el('rect', {{ class: 'erd-hdr1', rx:'7', width: NODE_W, height: HEADER_H, fill: entity.headerColor }}, g);
     el('rect', {{ class: 'erd-hdr2', y: HEADER_H - 7, width: NODE_W, height:'7', fill: entity.headerColor }}, g);
     el('text', {{
@@ -346,6 +349,13 @@ function render() {{
       style:'letter-spacing:0.01em;',
       textContent: entity.label
     }}, g);
+    if (entity.kind !== 'table') {{
+      el('text', {{
+        x:NODE_W-10, y: HEADER_H/2+1, 'font-size':'9', 'font-weight':'700',
+        fill:'white', 'text-anchor':'end', 'dominant-baseline':'middle', opacity:'0.85',
+        textContent: entity.kind === 'materialized_view' ? 'MV' : 'VIEW'
+      }}, g);
+    }}
 
     for (let i = 0; i < entity.fields.length; i++) {{
       const field = entity.fields[i];
