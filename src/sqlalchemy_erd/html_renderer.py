@@ -354,18 +354,24 @@ function render() {{
         const sy = HEADER_H + PAD_ + i * FIELD_H;
         el('line', {{ x1:'10', y1:sy, x2:NODE_W-10, y2:sy, stroke: THEME.separator, 'stroke-width':'1' }}, g);
       }}
-      el('text', {{
+      const nameAttrs = {{
         x:'10', y:fy, 'font-size':'10',
         'font-family':"'Courier New', Courier, monospace",
         fill: field.nameColor, 'font-weight': field.nameWeight,
         'dominant-baseline':'middle', textContent: field.name
-      }}, g);
-      el('text', {{
+      }};
+      const kindAttrs = {{
         x: NODE_W-8, y:fy, 'font-size':'9',
         'font-family':"'Courier New', Courier, monospace",
         fill: field.kindColor, 'text-anchor':'end',
         'dominant-baseline':'middle', opacity:'0.9', textContent: field.kindLabel
-      }}, g);
+      }};
+      if (field.comment) {{
+        nameAttrs.title = field.comment;
+        kindAttrs.title = field.comment;
+      }}
+      el('text', nameAttrs, g);
+      el('text', kindAttrs, g);
     }}
 
     g.addEventListener('pointerdown', e => {{
