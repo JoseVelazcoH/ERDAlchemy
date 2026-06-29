@@ -95,6 +95,12 @@ class TestBuildEntitiesJson:
         entities = json.loads(_build_entities_json(tables, theme))
         assert _entity(entities, "users")["headerColor"] == "#ff0000"
 
+    def test_column_comment_is_serialized(self, comments_metadata_fixture):
+        tables, _ = introspect_models(comments_metadata_fixture)
+        entities = json.loads(_build_entities_json(tables, get_theme("default")))
+        email = _field(_entity(entities, "accounts"), "email")
+        assert email["comment"] == "Primary login email"
+
 
 # ── _build_relations_json ────────────────────────────────────────────────────
 
@@ -170,3 +176,10 @@ class TestRenderHtml:
         html = render_html(tables, rels, positions, theme)
         assert "<!DOCTYPE html>" in html
         assert _extract_js_object(html, "ENTITIES") == []
+
+    def test_html_contains_tooltip_binding(self, comments_metadata_fixture):
+        tables, rels = introspect_models(comments_metadata_fixture)
+        positions = force_directed_layout(tables, rels)
+        html = render_html(tables, rels, positions, get_theme("default"))
+        assert "field.comment" in html
+        assert "Primary login email" in html
