@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import (
     ARRAY, BigInteger, Boolean, Date, DateTime, Enum, Float, Integer,
     Interval, JSON, LargeBinary, MetaData, Numeric, SmallInteger, String,
-    Text, Time, Uuid,
+    Text, Time, UniqueConstraint, Uuid,
 )
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.types import TypeDecorator
@@ -162,10 +162,28 @@ def _build_table(
     )
 
 
+def _unique_columns(table: Any) -> set[str]:
+    unique_cols = {col.name for col in table.columns if getattr(col, "unique", False)}
+    for constraint in table.constraints:
+        if isinstance(constraint, UniqueConstraint):
+            unique_cols.update(col.name for col in constraint.columns)
+    for index in table.indexes:
+        if index.unique:
+            unique_cols.update(col.name for col in index.columns)
+    return unique_cols
+
+
+def _fk_is_unique(table: Any, col: Any) -> bool:
+    pk_cols = {c.name for c in table.primary_key.columns}
+    if col.primary_key and pk_cols == {col.name}:
+        return True
+    return col.name in _unique_columns(table)
+
+
 def _build_relationships(
     filtered_items: list[tuple[str, Any]],
 ) -> list[RelationshipInfo]:
-    """Derive one ``1:N`` relationship per distinct foreign key column."""
+    """Derive one relationship per distinct foreign key column."""
     relationships: list[RelationshipInfo] = []
     seen_fks: set[tuple[str, str, str]] = set()
 
@@ -180,8 +198,8 @@ def _build_relationships(
                 relationships.append(RelationshipInfo(
                     from_table=ref_table,
                     to_table=table_key,
-                    from_card="1",
-                    to_card="N",
+                    from_card="0..1" if col.nullable else "1",
+                    to_card="1" if _fk_is_unique(table, col) else "N",
                     fk_column=col.name,
                 ))
 
