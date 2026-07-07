@@ -1,6 +1,12 @@
-# erdalchemy
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/header/surface.svg?title=erdalchemy&subtitle=Interactive+ERD+visualizer+for+SQLAlchemy&logo=ri%3AFaDatabase&mode=dark&theme=blue&font=space-grotesk&border=false">
+    <img alt="erdalchemy" src="https://shieldcn.dev/header/surface.svg?title=erdalchemy&subtitle=Interactive+ERD+visualizer+for+SQLAlchemy&logo=ri%3AFaDatabase&mode=light&theme=blue&font=space-grotesk&border=false">
+  </picture>
+</p>
 
-Interactive ERD visualizer for SQLAlchemy 2.0 models. Point it at your `DeclarativeBase` and get a diagram, no manual configuration.
+
+erdalchemy is an interactive ERD visualizer for SQLAlchemy 2.0 models. Point it at your `DeclarativeBase` and get a diagram, no manual configuration.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/JoseVelazcoH/ERDAlchemy/main/examples/showcase/showcase.png" alt="preview" width="90%">
