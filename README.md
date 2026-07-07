@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/header/surface.svg?title=erdalchemy&subtitle=Interactive+ERD+visualizer+for+SQLAlchemy&logo=ri%3AFaDatabase&mode=dark&theme=blue&font=space-grotesk&border=false">
-    <img alt="erdalchemy" src="https://shieldcn.dev/header/surface.svg?title=erdalchemy&subtitle=Interactive+ERD+visualizer+for+SQLAlchemy&logo=ri%3AFaDatabase&mode=light&theme=blue&font=space-grotesk&border=false">
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/header/transparent.svg?title=erdalchemy&subtitle=Interactive+ERD+visualizer+for+SQLAlchemy&logo=ri%3AFaDatabase&mode=dark&theme=blue&font=space-grotesk&border=false">
+    <img alt="erdalchemy" src="https://shieldcn.dev/header/transparent.svg?title=erdalchemy&subtitle=Interactive+ERD+visualizer+for+SQLAlchemy&logo=ri%3AFaDatabase&mode=light&theme=blue&font=space-grotesk&border=false">
   </picture>
 </p>
 
