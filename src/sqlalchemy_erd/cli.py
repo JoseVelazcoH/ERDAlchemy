@@ -136,6 +136,10 @@ def main(argv: list[str] | None = None) -> None:
         "--exclude-columns", nargs="+", metavar="REGEX",
         help="Hide columns matching these full-string regex patterns",
     )
+    parser.add_argument(
+        "--no-views", dest="include_views", action="store_false", default=True,
+        help="Exclude view/materialized-view tables marked via SQLAlchemy info/class flags",
+    )
 
     args = parser.parse_args(argv)
 
@@ -146,7 +150,9 @@ def main(argv: list[str] | None = None) -> None:
         exclude_tables=args.exclude_tables,
         exclude_columns=args.exclude_columns,
     )
-    tables, relationships = introspect_models(target, schemas=schemas_list, filters=filters)
+    tables, relationships = introspect_models(
+        target, schemas=schemas_list, filters=filters, include_views=args.include_views,
+    )
 
     if not tables:
         print("No tables found.", file=sys.stderr)

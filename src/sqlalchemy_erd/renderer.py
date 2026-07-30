@@ -201,13 +201,14 @@ def render_svg(
         header_col = theme.get_header_color(table.name)
 
         parts.append(
-            f'  <g class="erd-node" data-table="{table.name}" '
+            f'  <g class="erd-node" data-table="{table.name}" data-kind="{table.kind}" '
             f'transform="translate({x}, {y})" style="cursor: grab;">'
         )
         parts.append(f'    <rect x="3" y="3" rx="{CARD_RADIUS}" width="{node_w}" height="{h}" fill="rgba(0,0,0,0.06)" />')
+        card_dash = ' stroke-dasharray="6 3"' if table.kind != "table" else ""
         parts.append(
             f'    <rect class="erd-card" rx="{CARD_RADIUS}" width="{node_w}" height="{h}" '
-            f'fill="{theme.card_bg}" stroke="{theme.card_border}" stroke-width="1" />'
+            f'fill="{theme.card_bg}" stroke="{theme.card_border}" stroke-width="1"{card_dash} />'
         )
         parts.append(f'    <rect rx="{CARD_RADIUS}" width="{node_w}" height="{HEADER_H}" fill="{header_col}" />')
         parts.append(
@@ -220,6 +221,13 @@ def render_svg(
             f'font-weight="600" fill="white" dominant-baseline="middle" '
             f'style="letter-spacing: 0.01em;">{escape(table.class_name)}</text>'
         )
+        if table.kind != "table":
+            kind_badge = "MV" if table.kind == "materialized_view" else "VIEW"
+            parts.append(
+                f'    <text x="{node_w - 10}" y="{HEADER_H / 2 + 1}" font-size="9" '
+                f'font-weight="700" fill="white" text-anchor="end" '
+                f'dominant-baseline="middle" opacity="0.85">{kind_badge}</text>'
+            )
 
         for i, col in enumerate(table.columns):
             fy = HEADER_H + PAD + i * FIELD_H + FIELD_H / 2 + 1

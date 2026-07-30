@@ -51,7 +51,7 @@ class TestBuildEntitiesJson:
     def test_entity_has_expected_keys(self, blog_base):
         entities = _entities(blog_base)
         entity = _entity(entities, "users")
-        assert set(entity) == {"id", "label", "schema", "headerColor", "hoverColor", "fields"}
+        assert set(entity) == {"id", "label", "schema", "kind", "headerColor", "hoverColor", "fields"}
 
     def test_entity_count_matches_table_count(self, blog_base):
         tables, _ = introspect_models(blog_base)
@@ -94,6 +94,11 @@ class TestBuildEntitiesJson:
         theme = get_theme("default", table_colors={"users": "#ff0000"})
         entities = json.loads(_build_entities_json(tables, theme))
         assert _entity(entities, "users")["headerColor"] == "#ff0000"
+
+    def test_view_kind_is_serialized(self, view_metadata_fixture):
+        tables, _ = introspect_models(view_metadata_fixture)
+        entities = json.loads(_build_entities_json(tables, get_theme("default")))
+        assert _entity(entities, "active_users")["kind"] == "view"
 
 
 # ── _build_relations_json ────────────────────────────────────────────────────

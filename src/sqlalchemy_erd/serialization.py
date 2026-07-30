@@ -39,6 +39,7 @@ def build_entities_json(tables: list[TableInfo], theme: Theme) -> str:
             "id": t.name,
             "label": t.class_name,
             "schema": t.schema,
+            "kind": t.kind,
             "headerColor": theme.get_header_color(t.name),
             "hoverColor": theme.header_hover_color,
             "fields": fields,
