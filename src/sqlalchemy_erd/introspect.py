@@ -188,10 +188,17 @@ def _build_table(
     )
 
 
+def _fk_is_unique(table: Any, col: Any) -> bool:
+    pk_cols = {c.name for c in table.primary_key.columns}
+    if col.primary_key and pk_cols == {col.name}:
+        return True
+    return col.name in _column_constraint_flags(table, show_indexes=False)[0]
+
+
 def _build_relationships(
     filtered_items: list[tuple[str, Any]],
 ) -> list[RelationshipInfo]:
-    """Derive one ``1:N`` relationship per distinct foreign key column."""
+    """Derive one relationship per distinct foreign key column."""
     relationships: list[RelationshipInfo] = []
     seen_fks: set[tuple[str, str, str]] = set()
 
@@ -206,8 +213,8 @@ def _build_relationships(
                 relationships.append(RelationshipInfo(
                     from_table=ref_table,
                     to_table=table_key,
-                    from_card="1",
-                    to_card="N",
+                    from_card="0..1" if col.nullable else "1",
+                    to_card="1" if _fk_is_unique(table, col) else "N",
                     fk_column=col.name,
                 ))
 

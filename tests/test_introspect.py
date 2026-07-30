@@ -4,9 +4,6 @@ from sqlalchemy_erd.introspect import (
     introspect_models,
     _classify_type,
     _column_kind,
-    ColumnInfo,
-    TableInfo,
-    RelationshipInfo,
 )
 from sqlalchemy import (
     ARRAY, Integer, String, Text, Float, Boolean, Enum, JSON, DateTime, Date,
@@ -374,3 +371,25 @@ class TestIntrospectConstraints:
         accounts = next(t for t in tables if t.name == "accounts")
         indexed_cols = {c.name for c in accounts.columns if c.is_indexed}
         assert indexed_cols == {"slug", "external_id"}
+
+
+# -- Relationship cardinality -------------------------------------------------
+
+class TestRelationshipCardinality:
+    def test_pk_fk_is_one_to_one(self, cardinality_metadata_fixture):
+        _, rels = introspect_models(cardinality_metadata_fixture)
+        rel = next(r for r in rels if r.to_table == "profiles")
+        assert rel.from_card == "1"
+        assert rel.to_card == "1"
+
+    def test_unique_fk_is_one_to_one(self, cardinality_metadata_fixture):
+        _, rels = introspect_models(cardinality_metadata_fixture)
+        rel = next(r for r in rels if r.to_table == "avatars")
+        assert rel.from_card == "1"
+        assert rel.to_card == "1"
+
+    def test_nullable_fk_marks_optional_parent(self, cardinality_metadata_fixture):
+        _, rels = introspect_models(cardinality_metadata_fixture)
+        rel = next(r for r in rels if r.to_table == "tasks")
+        assert rel.from_card == "0..1"
+        assert rel.to_card == "N"
