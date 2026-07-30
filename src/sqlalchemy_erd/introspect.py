@@ -18,6 +18,8 @@ class ColumnInfo:
     nullable: bool
     is_pk: bool
     is_fk: bool
+    is_unique: bool = False
+    is_indexed: bool = False
 
 
 @dataclass
@@ -125,15 +127,37 @@ def _resolve_metadata(
     return metadata, class_names
 
 
+def _column_constraint_flags(table: Any, show_indexes: bool) -> tuple[set[str], set[str]]:
+    unique_cols = {col.name for col in table.columns if getattr(col, "unique", False)}
+    indexed_cols = {
+        col.name for col in table.columns
+        if show_indexes and getattr(col, "index", False)
+    }
+
+    for constraint in table.constraints:
+        if isinstance(constraint, UniqueConstraint):
+            unique_cols.update(col.name for col in constraint.columns)
+
+    for index in table.indexes:
+        if index.unique:
+            unique_cols.update(col.name for col in index.columns)
+        elif show_indexes:
+            indexed_cols.update(col.name for col in index.columns)
+
+    return unique_cols, indexed_cols
+
+
 def _build_table(
     table_key: str,
     table: Any,
     class_names: dict[str, str],
     multi_schema: bool,
     exclude_columns: list[re.Pattern[str]] | None = None,
+    show_indexes: bool = False,
 ) -> TableInfo:
     pk_cols = {c.name for c in table.primary_key.columns}
     fk_cols = {col.name for col in table.columns if col.foreign_keys}
+    unique_cols, indexed_cols = _column_constraint_flags(table, show_indexes)
 
     columns: list[ColumnInfo] = []
     for col in table.columns:
@@ -147,6 +171,8 @@ def _build_table(
             nullable=col.nullable or False,
             is_pk=is_pk,
             is_fk=is_fk,
+            is_unique=col.name in unique_cols,
+            is_indexed=col.name in indexed_cols and col.name not in unique_cols,
         ))
 
     display_name = class_names.get(table_key, table.name)
@@ -162,22 +188,11 @@ def _build_table(
     )
 
 
-def _unique_columns(table: Any) -> set[str]:
-    unique_cols = {col.name for col in table.columns if getattr(col, "unique", False)}
-    for constraint in table.constraints:
-        if isinstance(constraint, UniqueConstraint):
-            unique_cols.update(col.name for col in constraint.columns)
-    for index in table.indexes:
-        if index.unique:
-            unique_cols.update(col.name for col in index.columns)
-    return unique_cols
-
-
 def _fk_is_unique(table: Any, col: Any) -> bool:
     pk_cols = {c.name for c in table.primary_key.columns}
     if col.primary_key and pk_cols == {col.name}:
         return True
-    return col.name in _unique_columns(table)
+    return col.name in _column_constraint_flags(table, show_indexes=False)[0]
 
 
 def _build_relationships(
@@ -253,6 +268,7 @@ def introspect_models(
     base_or_metadata: type[DeclarativeBase] | MetaData,
     schemas: list[str] | None = None,
     filters: Filters | None = None,
+    show_indexes: bool = False,
 ) -> tuple[list[TableInfo], list[RelationshipInfo]]:
     metadata, class_names = _resolve_metadata(base_or_metadata)
     filters = filters or Filters()
@@ -269,7 +285,9 @@ def introspect_models(
     multi_schema = len({table.schema for _, table in filtered_items}) > 1
 
     tables = [
-        _build_table(table_key, table, class_names, multi_schema, exclude_columns)
+        _build_table(
+            table_key, table, class_names, multi_schema, exclude_columns, show_indexes,
+        )
         for table_key, table in filtered_items
     ]
     relationships = _build_relationships(filtered_items)

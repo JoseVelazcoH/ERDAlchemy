@@ -25,6 +25,10 @@ def auto_node_width(tables: list[TableInfo]) -> int:
             kind_label = DEFAULT_KIND_LABELS.get(col.kind, col.kind)
             if not col.is_pk and not col.is_fk and col.nullable:
                 kind_label += "?"
+            if col.is_unique:
+                kind_label += " U"
+            elif col.is_indexed:
+                kind_label += " IDX"
             col_w = (
                 FIELD_PADDING_LEFT
                 + len(col.name) * FIELD_CHAR_W
