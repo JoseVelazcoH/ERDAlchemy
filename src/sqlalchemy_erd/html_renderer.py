@@ -3,7 +3,6 @@ from xml.sax.saxutils import escape
 
 from sqlalchemy_erd.constants.geometry import FIELD_H, HEADER_H, NODE_W, PAD
 from sqlalchemy_erd.introspect import TableInfo, RelationshipInfo
-from sqlalchemy_erd.layout import node_h
 from sqlalchemy_erd.serialization import build_entities_json, build_relations_json
 from sqlalchemy_erd.theme import Theme
 
