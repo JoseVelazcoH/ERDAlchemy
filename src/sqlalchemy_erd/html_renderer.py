@@ -236,6 +236,8 @@ function el(tag, attrs, parent) {{
   const e = document.createElementNS(NS, tag);
   for (const [k,v] of Object.entries(attrs||{{}})) {{
     if (k === 'textContent') e.textContent = v;
+    // SVG ignores the title attribute: the native tooltip needs a <title> child.
+    else if (k === 'title') el('title', {{ textContent: v }}, e);
     else e.setAttribute(k, v);
   }}
   if (parent) parent.appendChild(e);

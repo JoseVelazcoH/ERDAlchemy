@@ -183,3 +183,5 @@ class TestRenderHtml:
         html = render_html(tables, rels, positions, get_theme("default"))
         assert "field.comment" in html
         assert "Primary login email" in html
+        # A title attribute renders no tooltip in SVG; el() must emit a <title> child.
+        assert "el('title', { textContent: v }, e)" in html
