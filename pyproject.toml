@@ -28,7 +28,7 @@ dependencies = ["sqlalchemy>=2.0"]
 png = ["cairosvg>=2.7"]
 pdf = ["cairosvg>=2.7"]
 all = ["cairosvg>=2.7"]
-dev = ["pytest>=8.0"]
+dev = ["pre-commit>=4.0", "pytest>=8.0", "ruff>=0.9.0"]
 
 [project.scripts]
 sqlalchemy-erd = "sqlalchemy_erd.cli:main"
@@ -38,3 +38,20 @@ packages = ["src/sqlalchemy_erd"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "F401", # unused imports
+    "F811", # redefined unused variable
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["sqlalchemy_erd"]
