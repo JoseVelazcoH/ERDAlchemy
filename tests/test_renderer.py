@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 from sqlalchemy_erd.force import force_directed_layout
 from sqlalchemy_erd.introspect import introspect_models
-from sqlalchemy_erd.renderer import render_svg, _best_side, _conn_pt, _side_vec
+from sqlalchemy_erd.renderer import render_svg, _best_side, _side_vec
 from sqlalchemy_erd.theme import get_theme
 from sqlalchemy_erd.introspect import TableInfo, ColumnInfo
 
