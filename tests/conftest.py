@@ -16,6 +16,7 @@ from decimal import Decimal
 pytest_plugins = [
     "tests.fixtures.inheritance",
     "tests.fixtures.cardinality",
+    "tests.fixtures.comments",
 ]
 
 
@@ -281,4 +282,3 @@ class Task(MultiFkBase):
 @pytest.fixture
 def multi_fk_base():
     return MultiFkBase
-

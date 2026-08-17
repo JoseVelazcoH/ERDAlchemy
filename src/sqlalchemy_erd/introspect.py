@@ -22,6 +22,7 @@ class ColumnInfo:
     nullable: bool
     is_pk: bool
     is_fk: bool
+    comment: str | None = None
 
 
 @dataclass
@@ -154,6 +155,7 @@ def _build_table(
             nullable=col.nullable or False,
             is_pk=is_pk,
             is_fk=is_fk,
+            comment=col.comment,
         ))
 
     display_name = class_names.get(table_key, table.name)

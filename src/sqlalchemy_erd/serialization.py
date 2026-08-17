@@ -33,6 +33,7 @@ def build_entities_json(tables: list[TableInfo], theme: Theme) -> str:
                 "nameWeight": name_weight,
                 "kindColor": kind_color,
                 "kindLabel": kind_label,
+                "comment": col.comment,
             })
 
         entities.append({

@@ -400,3 +400,13 @@ class TestRelationshipCardinality:
         rel = next(r for r in rels if r.to_table == "tasks")
         assert rel.from_card == "0..1"
         assert rel.to_card == "N"
+
+
+# -- Column comments ----------------------------------------------------------
+
+class TestIntrospectColumnComments:
+    def test_column_comments_are_preserved(self, comments_metadata_fixture):
+        tables, _ = introspect_models(comments_metadata_fixture)
+        accounts = next(t for t in tables if t.name == "accounts")
+        email = next(c for c in accounts.columns if c.name == "email")
+        assert email.comment == "Primary login email"
