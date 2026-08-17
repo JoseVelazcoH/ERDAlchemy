@@ -10,6 +10,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, Mapper
 from sqlalchemy.types import TypeDecorator
 
+from sqlalchemy_erd.constants.relationships import (
+    KIND_FK, KIND_INHERITANCE, STRATEGY_CONCRETE, STRATEGY_JOINED,
+)
+
 
 @dataclass
 class ColumnInfo:
@@ -35,7 +39,7 @@ class RelationshipInfo:
     from_card: str
     to_card: str
     fk_column: str
-    kind: str = "fk"
+    kind: str = KIND_FK
     label: str | None = None
 
 
@@ -210,11 +214,8 @@ def _build_relationships(
 
 
 def _inheritance_strategy(mapper: Mapper) -> str:
-    if mapper.concrete:
-        return "concrete"
-    if mapper.inherits is not None and mapper.local_table is mapper.inherits.local_table:
-        return "single"
-    return "joined"
+    """Name the strategy of a child mapper that owns its own table."""
+    return STRATEGY_CONCRETE if mapper.concrete else STRATEGY_JOINED
 
 
 def _build_inheritance_relationships(
@@ -234,9 +235,14 @@ def _build_inheritance_relationships(
         if parent_name not in kept_names or child_name not in kept_names:
             continue
 
+        # The join column is the child PK that also references the parent.
         fk_col = ""
+        pk_names = {col.name for col in child_table.primary_key.columns}
         for col in child_table.columns:
-            if any(fk.column.table.fullname == parent_name for fk in col.foreign_keys):
+            references_parent = any(
+                fk.column.table.fullname == parent_name for fk in col.foreign_keys
+            )
+            if references_parent and col.name in pk_names:
                 fk_col = col.name
                 break
         if not fk_col:
@@ -250,7 +256,7 @@ def _build_inheritance_relationships(
             from_card="1",
             to_card="1",
             fk_column=fk_col,
-            kind="inheritance",
+            kind=KIND_INHERITANCE,
             label=strategy,
         ))
     return relationships
@@ -329,12 +335,14 @@ def introspect_models(
     )
     kept_names = {t.name for t in tables}
     inheritance_relationships = _build_inheritance_relationships(mappers, kept_names)
-    inheritance_pairs = {
-        (rel.from_table, rel.to_table) for rel in inheritance_relationships
+    # Drop only the FK edge the inheritance edge replaces.
+    inheritance_edges = {
+        (rel.from_table, rel.to_table, rel.fk_column)
+        for rel in inheritance_relationships
     }
     relationships = [
         rel for rel in relationships
-        if (rel.from_table, rel.to_table) not in inheritance_pairs
+        if (rel.from_table, rel.to_table, rel.fk_column) not in inheritance_edges
     ]
     relationships.extend(inheritance_relationships)
     relationships = [

@@ -1,4 +1,7 @@
-"""Shared fixtures for the ERDAlchemy test suite."""
+"""Shared fixtures for the ERDAlchemy test suite.
+
+Per-domain schemas live in ``tests/fixtures`` and are loaded as plugins.
+"""
 
 import pytest
 from sqlalchemy import (
@@ -9,6 +12,11 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import datetime, timedelta, time
 from decimal import Decimal
+
+pytest_plugins = [
+    "tests.fixtures.inheritance",
+    "tests.fixtures.cardinality",
+]
 
 
 # ── Single-table schema ──────────────────────────────────────────────────────
@@ -274,65 +282,3 @@ class Task(MultiFkBase):
 def multi_fk_base():
     return MultiFkBase
 
-
-# -- Joined-table inheritance schema -----------------------------------------
-
-class InheritanceBase(DeclarativeBase):
-    pass
-
-
-class Employee(InheritanceBase):
-    __tablename__ = "employees"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    kind: Mapped[str] = mapped_column(String(50))
-    name: Mapped[str] = mapped_column(String(100))
-    __mapper_args__ = {
-        "polymorphic_on": kind,
-        "polymorphic_identity": "employee",
-    }
-
-
-class Manager(Employee):
-    __tablename__ = "managers"
-    id: Mapped[int] = mapped_column(ForeignKey("employees.id"), primary_key=True)
-    department: Mapped[str] = mapped_column(String(100))
-    __mapper_args__ = {"polymorphic_identity": "manager"}
-
-
-@pytest.fixture
-def inheritance_base():
-    return InheritanceBase
-
-
-# -- Cardinality schema -------------------------------------------------------
-
-cardinality_metadata = MetaData()
-
-Table(
-    "users", cardinality_metadata,
-    Column("id", Integer, primary_key=True),
-    Column("name", String(100), nullable=False),
-)
-
-Table(
-    "profiles", cardinality_metadata,
-    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
-    Column("bio", Text),
-)
-
-Table(
-    "avatars", cardinality_metadata,
-    Column("id", Integer, primary_key=True),
-    Column("user_id", Integer, ForeignKey("users.id"), unique=True, nullable=False),
-)
-
-Table(
-    "tasks", cardinality_metadata,
-    Column("id", Integer, primary_key=True),
-    Column("assignee_id", Integer, ForeignKey("users.id"), nullable=True),
-)
-
-
-@pytest.fixture
-def cardinality_metadata_fixture():
-    return cardinality_metadata

@@ -1,6 +1,7 @@
 from xml.sax.saxutils import escape
 
 from sqlalchemy_erd.constants.geometry import FIELD_H, HEADER_H, NODE_W, PAD
+from sqlalchemy_erd.constants.relationships import KIND_INHERITANCE
 from sqlalchemy_erd.constants.styling import (
     CARD_RADIUS, FIELD_FONT_SIZE, FIELD_INSET, HEADER_STRIP_H, KIND_FONT_SIZE,
     KIND_INSET, TITLE_FONT_SIZE, TITLE_INSET,
@@ -167,7 +168,7 @@ def render_svg(
             tpt = _conn_pt(tp, tt, ts, to_idx, node_w)
 
         path_d = orthogonal_path(fpt, fs, tpt, ts)
-        is_inheritance = rel.kind == "inheritance"
+        is_inheritance = rel.kind == KIND_INHERITANCE
         is_nn = rel.from_card == "N" and rel.to_card == "N"
         is_cross = multi_schema and ft.schema != tt.schema
         marker = "inherit" if is_inheritance else "arr"

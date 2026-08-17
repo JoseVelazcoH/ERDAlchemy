@@ -372,6 +372,13 @@ class TestIntrospectInheritance:
         pairs = [(r.from_table, r.to_table) for r in rels]
         assert pairs.count(("employees", "managers")) == 1
 
+    def test_extra_fk_to_parent_survives_inheritance_edge(
+        self, inheritance_extra_fk_base,
+    ):
+        _, rels = introspect_models(inheritance_extra_fk_base)
+        edges = {(r.kind, r.fk_column) for r in rels if r.to_table == "leads"}
+        assert edges == {("inheritance", "id"), ("fk", "mentor_id")}
+
 
 # -- Relationship cardinality -------------------------------------------------
 
