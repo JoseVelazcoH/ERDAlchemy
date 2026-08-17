@@ -1,4 +1,7 @@
-"""Shared fixtures for the ERDAlchemy test suite."""
+"""Shared fixtures for the ERDAlchemy test suite.
+
+Per-domain schemas live in ``tests/fixtures`` and are loaded as plugins.
+"""
 
 import pytest
 from sqlalchemy import (
@@ -9,6 +12,12 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import datetime, timedelta, time
 from decimal import Decimal
+
+pytest_plugins = [
+    "tests.fixtures.inheritance",
+    "tests.fixtures.cardinality",
+    "tests.fixtures.comments",
+]
 
 
 # ── Single-table schema ──────────────────────────────────────────────────────
@@ -273,53 +282,3 @@ class Task(MultiFkBase):
 @pytest.fixture
 def multi_fk_base():
     return MultiFkBase
-
-
-# -- Cardinality schema -------------------------------------------------------
-
-cardinality_metadata = MetaData()
-
-Table(
-    "users", cardinality_metadata,
-    Column("id", Integer, primary_key=True),
-    Column("name", String(100), nullable=False),
-)
-
-Table(
-    "profiles", cardinality_metadata,
-    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
-    Column("bio", Text),
-)
-
-Table(
-    "avatars", cardinality_metadata,
-    Column("id", Integer, primary_key=True),
-    Column("user_id", Integer, ForeignKey("users.id"), unique=True, nullable=False),
-)
-
-Table(
-    "tasks", cardinality_metadata,
-    Column("id", Integer, primary_key=True),
-    Column("assignee_id", Integer, ForeignKey("users.id"), nullable=True),
-)
-
-
-@pytest.fixture
-def cardinality_metadata_fixture():
-    return cardinality_metadata
-
-
-# -- Column comments schema ---------------------------------------------------
-
-comments_metadata = MetaData()
-
-Table(
-    "accounts", comments_metadata,
-    Column("id", Integer, primary_key=True),
-    Column("email", String(200), comment="Primary login email"),
-)
-
-
-@pytest.fixture
-def comments_metadata_fixture():
-    return comments_metadata
