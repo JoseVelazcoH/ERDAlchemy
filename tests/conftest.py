@@ -1,16 +1,23 @@
-"""Shared fixtures for the ERDAlchemy test suite."""
+"""Shared fixtures for the ERDAlchemy test suite.
 
-from __future__ import annotations
+Per-domain schemas live in ``tests/fixtures`` and are loaded as plugins.
+"""
 
 import pytest
 from sqlalchemy import (
-    ARRAY, Column, Enum, ForeignKey, Integer, Interval, LargeBinary,
+    Column, Enum, ForeignKey, Integer, Interval, LargeBinary,
     String, Text, DateTime, Boolean, Float, Numeric, JSON, BigInteger,
-    SmallInteger, Date, Time, Uuid, Table, MetaData,
+    SmallInteger, Date, Time, Table, MetaData,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import datetime, timedelta, time
 from decimal import Decimal
+
+pytest_plugins = [
+    "tests.fixtures.inheritance",
+    "tests.fixtures.cardinality",
+    "tests.fixtures.comments",
+]
 
 
 # ── Single-table schema ──────────────────────────────────────────────────────

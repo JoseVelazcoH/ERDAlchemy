@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -7,10 +5,14 @@ from typing import Any
 from sqlalchemy import (
     ARRAY, BigInteger, Boolean, Date, DateTime, Enum, Float, Integer,
     Interval, JSON, LargeBinary, MetaData, Numeric, SmallInteger, String,
-    Text, Time, Uuid,
+    Text, Time, UniqueConstraint, Uuid,
 )
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Mapper
 from sqlalchemy.types import TypeDecorator
+
+from sqlalchemy_erd.constants.relationships import (
+    KIND_FK, KIND_INHERITANCE, STRATEGY_CONCRETE, STRATEGY_JOINED,
+)
 
 
 @dataclass
@@ -20,6 +22,7 @@ class ColumnInfo:
     nullable: bool
     is_pk: bool
     is_fk: bool
+    comment: str | None = None
 
 
 @dataclass
@@ -37,6 +40,8 @@ class RelationshipInfo:
     from_card: str
     to_card: str
     fk_column: str
+    kind: str = KIND_FK
+    label: str | None = None
 
 
 @dataclass(frozen=True)
@@ -114,17 +119,18 @@ def _column_kind(col_info: Any, is_pk: bool, is_fk: bool) -> str:
 
 def _resolve_metadata(
     base_or_metadata: type[DeclarativeBase] | MetaData,
-) -> tuple[MetaData, dict[str, str]]:
-    """Return the metadata and a table-fullname → mapped-class-name lookup."""
+) -> tuple[MetaData, dict[str, str], list[Mapper]]:
+    """Return metadata plus mapper information when a DeclarativeBase is given."""
     if isinstance(base_or_metadata, MetaData):
-        return base_or_metadata, {}
+        return base_or_metadata, {}, []
 
     metadata = base_or_metadata.metadata
+    mappers = list(base_or_metadata.registry.mappers)
     class_names = {
         mapper.local_table.fullname: mapper.class_.__name__
-        for mapper in base_or_metadata.registry.mappers
+        for mapper in mappers
     }
-    return metadata, class_names
+    return metadata, class_names, mappers
 
 
 def _build_table(
@@ -149,6 +155,7 @@ def _build_table(
             nullable=col.nullable or False,
             is_pk=is_pk,
             is_fk=is_fk,
+            comment=col.comment,
         ))
 
     display_name = class_names.get(table_key, table.name)
@@ -164,10 +171,28 @@ def _build_table(
     )
 
 
+def _unique_columns(table: Any) -> set[str]:
+    unique_cols = {col.name for col in table.columns if getattr(col, "unique", False)}
+    for constraint in table.constraints:
+        if isinstance(constraint, UniqueConstraint):
+            unique_cols.update(col.name for col in constraint.columns)
+    for index in table.indexes:
+        if index.unique:
+            unique_cols.update(col.name for col in index.columns)
+    return unique_cols
+
+
+def _fk_is_unique(table: Any, col: Any) -> bool:
+    pk_cols = {c.name for c in table.primary_key.columns}
+    if col.primary_key and pk_cols == {col.name}:
+        return True
+    return col.name in _unique_columns(table)
+
+
 def _build_relationships(
     filtered_items: list[tuple[str, Any]],
 ) -> list[RelationshipInfo]:
-    """Derive one ``1:N`` relationship per distinct foreign key column."""
+    """Derive one relationship per distinct foreign key column."""
     relationships: list[RelationshipInfo] = []
     seen_fks: set[tuple[str, str, str]] = set()
 
@@ -182,11 +207,60 @@ def _build_relationships(
                 relationships.append(RelationshipInfo(
                     from_table=ref_table,
                     to_table=table_key,
-                    from_card="1",
-                    to_card="N",
+                    from_card="0..1" if col.nullable else "1",
+                    to_card="1" if _fk_is_unique(table, col) else "N",
                     fk_column=col.name,
                 ))
 
+    return relationships
+
+
+def _inheritance_strategy(mapper: Mapper) -> str:
+    """Name the strategy of a child mapper that owns its own table."""
+    return STRATEGY_CONCRETE if mapper.concrete else STRATEGY_JOINED
+
+
+def _build_inheritance_relationships(
+    mappers: list[Mapper],
+    kept_names: set[str],
+) -> list[RelationshipInfo]:
+    relationships: list[RelationshipInfo] = []
+    for mapper in sorted(mappers, key=lambda m: m.local_table.fullname):
+        if mapper.inherits is None:
+            continue
+        parent_table = mapper.inherits.local_table
+        child_table = mapper.local_table
+        parent_name = parent_table.fullname
+        child_name = child_table.fullname
+        if parent_name == child_name:
+            continue
+        if parent_name not in kept_names or child_name not in kept_names:
+            continue
+
+        # The join column is the child PK that also references the parent.
+        fk_col = ""
+        pk_names = {col.name for col in child_table.primary_key.columns}
+        for col in child_table.columns:
+            references_parent = any(
+                fk.column.table.fullname == parent_name for fk in col.foreign_keys
+            )
+            if references_parent and col.name in pk_names:
+                fk_col = col.name
+                break
+        if not fk_col:
+            pk_cols = list(child_table.primary_key.columns)
+            fk_col = pk_cols[0].name if pk_cols else ""
+
+        strategy = _inheritance_strategy(mapper)
+        relationships.append(RelationshipInfo(
+            from_table=parent_name,
+            to_table=child_name,
+            from_card="1",
+            to_card="1",
+            fk_column=fk_col,
+            kind=KIND_INHERITANCE,
+            label=strategy,
+        ))
     return relationships
 
 
@@ -238,7 +312,7 @@ def introspect_models(
     schemas: list[str] | None = None,
     filters: Filters | None = None,
 ) -> tuple[list[TableInfo], list[RelationshipInfo]]:
-    metadata, class_names = _resolve_metadata(base_or_metadata)
+    metadata, class_names, mappers = _resolve_metadata(base_or_metadata)
     filters = filters or Filters()
     include = _compile(filters.include_tables)
     exclude = _compile(filters.exclude_tables)
@@ -262,6 +336,17 @@ def introspect_models(
         filtered_items, tables, relationships,
     )
     kept_names = {t.name for t in tables}
+    inheritance_relationships = _build_inheritance_relationships(mappers, kept_names)
+    # Drop only the FK edge the inheritance edge replaces.
+    inheritance_edges = {
+        (rel.from_table, rel.to_table, rel.fk_column)
+        for rel in inheritance_relationships
+    }
+    relationships = [
+        rel for rel in relationships
+        if (rel.from_table, rel.to_table, rel.fk_column) not in inheritance_edges
+    ]
+    relationships.extend(inheritance_relationships)
     relationships = [
         rel for rel in relationships
         if rel.from_table in kept_names and rel.to_table in kept_names

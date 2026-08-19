@@ -1,32 +1,15 @@
-"""Shared layout primitives: card geometry constants and sizing helpers.
+"""Card sizing helpers shared by every layout algorithm.
 
-The layout algorithms live in their own modules (``force``, ``star``,
-``layered``) and import the constants and ``node_h`` / ``auto_node_width``
-helpers from here.
+Geometry constants live in ``constants``; the layout algorithms live in their
+own modules (``force``, ``star``, ``layered``).
 """
 
-from __future__ import annotations
-
+from sqlalchemy_erd.constants.geometry import (
+    FIELD_CHAR_W, FIELD_H, FIELD_LABEL_GAP, FIELD_PADDING_LEFT,
+    FIELD_PADDING_RIGHT, HEADER_CHAR_W, HEADER_H, HEADER_PADDING, NODE_W, PAD,
+)
 from sqlalchemy_erd.introspect import TableInfo
 from sqlalchemy_erd.theme import DEFAULT_KIND_LABELS
-
-NODE_W = 218
-HEADER_H = 36
-FIELD_H = 21
-PAD = 6
-
-GAP_X = 60
-GAP_Y = 40
-MARGIN = 60.0
-
-# Approximate glyph widths (px) used to size a card to its widest text.
-# These track the font sizes/families in renderer.py and html_renderer.py.
-FIELD_CHAR_W = 6.2       # monospace field-name / kind-label font
-HEADER_CHAR_W = 7.8      # bold header-title font
-HEADER_PADDING = 24      # left + right padding around the header label
-FIELD_PADDING_LEFT = 10  # left inset of the field name
-FIELD_LABEL_GAP = 12     # gap between field name and kind label
-FIELD_PADDING_RIGHT = 8  # right inset of the kind label
 
 
 def node_h(table: TableInfo) -> int:

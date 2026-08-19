@@ -1,23 +1,17 @@
-from __future__ import annotations
-
 from xml.sax.saxutils import escape
 
+from sqlalchemy_erd.constants.geometry import FIELD_H, HEADER_H, NODE_W, PAD
+from sqlalchemy_erd.constants.relationships import KIND_INHERITANCE
+from sqlalchemy_erd.constants.styling import (
+    CARD_RADIUS, FIELD_FONT_SIZE, FIELD_INSET, HEADER_STRIP_H, KIND_FONT_SIZE,
+    KIND_INSET, TITLE_FONT_SIZE, TITLE_INSET,
+)
 from sqlalchemy_erd.edge_routing import orthogonal_path
 from sqlalchemy_erd.introspect import TableInfo, RelationshipInfo
-from sqlalchemy_erd.layout import NODE_W, HEADER_H, FIELD_H, PAD, node_h
+from sqlalchemy_erd.layout import node_h
 from sqlalchemy_erd.theme import Theme
 
 Side = str
-
-# Card visual styling (px). Mirrored by the interactive renderer in html_renderer.py.
-CARD_RADIUS = 7          # rounded-corner radius of the card and header
-HEADER_STRIP_H = 7       # square-off strip under the rounded header
-TITLE_FONT_SIZE = 13     # table title in the header
-FIELD_FONT_SIZE = 10     # column name
-KIND_FONT_SIZE = 9       # column type label
-TITLE_INSET = 12         # left inset of the title text
-FIELD_INSET = 10         # left inset of the column name / separator line
-KIND_INSET = 8           # right inset of the type label
 
 
 def _best_side(
@@ -133,6 +127,9 @@ def render_svg(
     <marker id="arr-hi" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="{theme.highlight_color}" />
     </marker>
+    <marker id="inherit" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto">
+      <polygon points="1 1, 11 5, 1 9" fill="{theme.bg_color}" stroke="{theme.edge_color}" stroke-width="1.4" />
+    </marker>
   </defs>""")
 
     parts.append(f'  <rect width="100%" height="100%" fill="{theme.bg_color}" />')
@@ -171,9 +168,13 @@ def render_svg(
             tpt = _conn_pt(tp, tt, ts, to_idx, node_w)
 
         path_d = orthogonal_path(fpt, fs, tpt, ts)
+        is_inheritance = rel.kind == KIND_INHERITANCE
         is_nn = rel.from_card == "N" and rel.to_card == "N"
         is_cross = multi_schema and ft.schema != tt.schema
-        if is_nn:
+        marker = "inherit" if is_inheritance else "arr"
+        if is_inheritance:
+            dash = ' stroke-dasharray="3 4"'
+        elif is_nn:
             dash = ' stroke-dasharray="5 3"'
         elif is_cross:
             dash = ' stroke-dasharray="8 4"'
@@ -183,11 +184,14 @@ def render_svg(
         fl = _label_pos(fpt, fs)
         tl = _label_pos(tpt, ts)
 
-        parts.append(f'  <g class="erd-rel" data-from="{rel.from_table}" data-to="{rel.to_table}">')
+        parts.append(
+            f'  <g class="erd-rel" data-from="{rel.from_table}" data-to="{rel.to_table}" '
+            f'data-kind="{rel.kind}">'
+        )
         parts.append(f'    <path d="{path_d}" fill="none" stroke="transparent" stroke-width="18" />')
         parts.append(
             f'    <path class="erd-edge" d="{path_d}" fill="none" '
-            f'stroke="{theme.edge_color}" stroke-width="1.5"{dash} marker-end="url(#arr)" />'
+            f'stroke="{theme.edge_color}" stroke-width="1.5"{dash} marker-end="url(#{marker})" />'
         )
         parts.append(
             f'    <text x="{fl[0]}" y="{fl[1]}" font-size="11" '
@@ -199,6 +203,14 @@ def render_svg(
             f'font-family="monospace" fill="{theme.edge_color}" '
             f'text-anchor="middle" dominant-baseline="middle">{rel.to_card}</text>'
         )
+        if rel.label:
+            mx = (fpt[0] + tpt[0]) / 2
+            my = (fpt[1] + tpt[1]) / 2 - 8
+            parts.append(
+                f'    <text x="{mx}" y="{my}" font-size="10" '
+                f'font-family="monospace" fill="{theme.edge_color}" '
+                f'text-anchor="middle" dominant-baseline="middle">{escape(rel.label)}</text>'
+            )
         parts.append("  </g>")
 
     for table in tables:

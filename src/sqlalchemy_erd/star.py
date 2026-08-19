@@ -1,11 +1,10 @@
 """Star/snowflake column layout: a fact table flanked by catalog columns."""
 
-from __future__ import annotations
-
 import math
 
+from sqlalchemy_erd.constants.geometry import GAP_X, GAP_Y, MARGIN, NODE_W
 from sqlalchemy_erd.introspect import RelationshipInfo, TableInfo
-from sqlalchemy_erd.layout import GAP_X, GAP_Y, MARGIN, NODE_W, node_h
+from sqlalchemy_erd.layout import node_h
 
 
 def _grid_layout(

@@ -1,7 +1,5 @@
 """Tests for sqlalchemy_erd.export — HTML, SVG, PNG, PDF output."""
 
-from __future__ import annotations
-
 import xml.etree.ElementTree as ET
 
 from sqlalchemy_erd.introspect import introspect_models

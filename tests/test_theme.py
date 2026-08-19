@@ -1,7 +1,5 @@
 """Tests for sqlalchemy_erd.theme — themes, schema colors, kind maps."""
 
-from __future__ import annotations
-
 import pytest
 
 from sqlalchemy_erd.theme import (

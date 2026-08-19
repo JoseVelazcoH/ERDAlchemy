@@ -8,15 +8,13 @@ table in Python; HTML emits a client-side template) does not generalize, so the
 shared contract is at the diagram level, not per element.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from sqlalchemy_erd.constants.geometry import NODE_W
 from sqlalchemy_erd.html_renderer import render_html
 from sqlalchemy_erd.introspect import RelationshipInfo, TableInfo
-from sqlalchemy_erd.layout import NODE_W
 from sqlalchemy_erd.renderer import render_svg
 from sqlalchemy_erd.theme import Theme
 

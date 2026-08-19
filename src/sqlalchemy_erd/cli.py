@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import argparse
 import importlib
 import json
@@ -9,9 +7,10 @@ from pathlib import Path
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
 
+from sqlalchemy_erd.constants.geometry import NODE_W
 from sqlalchemy_erd.force import ForceParams
 from sqlalchemy_erd.introspect import Filters, introspect_models
-from sqlalchemy_erd.layout import auto_node_width, NODE_W
+from sqlalchemy_erd.layout import auto_node_width
 from sqlalchemy_erd.layout_select import LayoutRequest, select_layout
 from sqlalchemy_erd.render import RenderRequest, render, write_output
 from sqlalchemy_erd.theme import get_theme, apply_schema_colors, THEMES

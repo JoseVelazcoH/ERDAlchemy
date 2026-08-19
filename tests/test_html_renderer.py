@@ -1,7 +1,5 @@
 """Tests for sqlalchemy_erd.html_renderer — interactive HTML output and its JSON payloads."""
 
-from __future__ import annotations
-
 import json
 import re
 
@@ -97,6 +95,12 @@ class TestBuildEntitiesJson:
         entities = json.loads(_build_entities_json(tables, theme))
         assert _entity(entities, "users")["headerColor"] == "#ff0000"
 
+    def test_column_comment_is_serialized(self, comments_metadata_fixture):
+        tables, _ = introspect_models(comments_metadata_fixture)
+        entities = json.loads(_build_entities_json(tables, get_theme("default")))
+        email = _field(_entity(entities, "accounts"), "email")
+        assert email["comment"] == "Primary login email"
+
 
 # ── _build_relations_json ────────────────────────────────────────────────────
 
@@ -111,7 +115,7 @@ class TestBuildRelationsJson:
         tables, rels = introspect_models(blog_base)
         positions = force_directed_layout(tables, rels)
         parsed = json.loads(_build_relations_json(rels, tables, positions))
-        assert set(parsed[0]) == {"from", "to", "fromCard", "toCard", "fkCol"}
+        assert set(parsed[0]) == {"from", "to", "fromCard", "toCard", "fkCol", "kind", "label"}
 
     def test_via_relation_keeps_via_prefix(self, m2m_base):
         tables, rels = introspect_models(m2m_base)
@@ -126,6 +130,13 @@ class TestBuildRelationsJson:
         kept = [t for t in tables if t.name != "comments"]
         parsed = json.loads(_build_relations_json(rels, kept, positions))
         assert all(r["from"] != "comments" and r["to"] != "comments" for r in parsed)
+
+    def test_inheritance_relation_serializes_kind_and_label(self, inheritance_base):
+        tables, rels = introspect_models(inheritance_base)
+        positions = force_directed_layout(tables, rels)
+        parsed = json.loads(_build_relations_json(rels, tables, positions))
+        rel = next(r for r in parsed if r["kind"] == "inheritance")
+        assert rel["label"] == "joined"
 
 
 # ── render_html ──────────────────────────────────────────────────────────────
@@ -172,3 +183,12 @@ class TestRenderHtml:
         html = render_html(tables, rels, positions, theme)
         assert "<!DOCTYPE html>" in html
         assert _extract_js_object(html, "ENTITIES") == []
+
+    def test_html_contains_tooltip_binding(self, comments_metadata_fixture):
+        tables, rels = introspect_models(comments_metadata_fixture)
+        positions = force_directed_layout(tables, rels)
+        html = render_html(tables, rels, positions, get_theme("default"))
+        assert "field.comment" in html
+        assert "Primary login email" in html
+        # A title attribute renders no tooltip in SVG; el() must emit a <title> child.
+        assert "el('title', { textContent: v }, e)" in html

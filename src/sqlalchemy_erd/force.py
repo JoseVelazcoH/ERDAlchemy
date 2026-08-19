@@ -1,13 +1,12 @@
 """Force-directed graph layout: organic placement via a physics simulation."""
 
-from __future__ import annotations
-
 import math
 import random
 from dataclasses import dataclass
 
+from sqlalchemy_erd.constants.geometry import MARGIN, NODE_W
 from sqlalchemy_erd.introspect import RelationshipInfo, TableInfo
-from sqlalchemy_erd.layout import MARGIN, NODE_W, node_h
+from sqlalchemy_erd.layout import node_h
 
 
 @dataclass(frozen=True)
@@ -32,13 +31,13 @@ class Vec:
     x: float
     y: float
 
-    def __add__(self, other: Vec) -> Vec:
+    def __add__(self, other: "Vec") -> "Vec":
         return Vec(self.x + other.x, self.y + other.y)
 
-    def __sub__(self, other: Vec) -> Vec:
+    def __sub__(self, other: "Vec") -> "Vec":
         return Vec(self.x - other.x, self.y - other.y)
 
-    def __mul__(self, s: float) -> Vec:
+    def __mul__(self, s: float) -> "Vec":
         return Vec(self.x * s, self.y * s)
 
     def length(self) -> float:

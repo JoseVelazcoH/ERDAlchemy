@@ -1,14 +1,9 @@
 """Tests for sqlalchemy_erd.introspect — metadata extraction, relationships, association tables."""
 
-from __future__ import annotations
-
 from sqlalchemy_erd.introspect import (
     introspect_models,
     _classify_type,
     _column_kind,
-    ColumnInfo,
-    TableInfo,
-    RelationshipInfo,
 )
 from sqlalchemy import (
     ARRAY, Integer, String, Text, Float, Boolean, Enum, JSON, DateTime, Date,
@@ -356,3 +351,62 @@ class TestIntrospectMultiSchema:
         tables, _ = introspect_models(multi_schema_metadata_fixture)
         schemas = {t.schema for t in tables}
         assert schemas == {"auth", "billing"}
+
+
+# -- SQLAlchemy inheritance ---------------------------------------------------
+
+class TestIntrospectInheritance:
+    def test_joined_inheritance_edge_is_distinct(self, inheritance_base):
+        _, rels = introspect_models(inheritance_base)
+        inheritance = [r for r in rels if r.kind == "inheritance"]
+        assert len(inheritance) == 1
+        rel = inheritance[0]
+        assert rel.from_table == "employees"
+        assert rel.to_table == "managers"
+        assert rel.from_card == "1"
+        assert rel.to_card == "1"
+        assert rel.label == "joined"
+
+    def test_joined_inheritance_does_not_duplicate_fk_edge(self, inheritance_base):
+        _, rels = introspect_models(inheritance_base)
+        pairs = [(r.from_table, r.to_table) for r in rels]
+        assert pairs.count(("employees", "managers")) == 1
+
+    def test_extra_fk_to_parent_survives_inheritance_edge(
+        self, inheritance_extra_fk_base,
+    ):
+        _, rels = introspect_models(inheritance_extra_fk_base)
+        edges = {(r.kind, r.fk_column) for r in rels if r.to_table == "leads"}
+        assert edges == {("inheritance", "id"), ("fk", "mentor_id")}
+
+
+# -- Relationship cardinality -------------------------------------------------
+
+class TestRelationshipCardinality:
+    def test_pk_fk_is_one_to_one(self, cardinality_metadata_fixture):
+        _, rels = introspect_models(cardinality_metadata_fixture)
+        rel = next(r for r in rels if r.to_table == "profiles")
+        assert rel.from_card == "1"
+        assert rel.to_card == "1"
+
+    def test_unique_fk_is_one_to_one(self, cardinality_metadata_fixture):
+        _, rels = introspect_models(cardinality_metadata_fixture)
+        rel = next(r for r in rels if r.to_table == "avatars")
+        assert rel.from_card == "1"
+        assert rel.to_card == "1"
+
+    def test_nullable_fk_marks_optional_parent(self, cardinality_metadata_fixture):
+        _, rels = introspect_models(cardinality_metadata_fixture)
+        rel = next(r for r in rels if r.to_table == "tasks")
+        assert rel.from_card == "0..1"
+        assert rel.to_card == "N"
+
+
+# -- Column comments ----------------------------------------------------------
+
+class TestIntrospectColumnComments:
+    def test_column_comments_are_preserved(self, comments_metadata_fixture):
+        tables, _ = introspect_models(comments_metadata_fixture)
+        accounts = next(t for t in tables if t.name == "accounts")
+        email = next(c for c in accounts.columns if c.name == "email")
+        assert email.comment == "Primary login email"

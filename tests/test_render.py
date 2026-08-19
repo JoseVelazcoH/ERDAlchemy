@@ -1,7 +1,5 @@
 """Tests for sqlalchemy_erd.render — the output-format renderer registry."""
 
-from __future__ import annotations
-
 import pytest
 
 from sqlalchemy_erd.force import force_directed_layout

@@ -1,7 +1,5 @@
 """Tests for sqlalchemy_erd.edge_routing — orthogonal (Manhattan) edge paths."""
 
-from __future__ import annotations
-
 import pytest
 
 from sqlalchemy_erd.edge_routing import orthogonal_path, orthogonal_waypoints
