@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.6.0](https://github.com/JoseVelazcoH/ERDAlchemy/compare/erdalchemy-v0.5.0...erdalchemy-v0.6.0) (2026-08-19)
+
+
+### Features
+
+* **core:** detect relationship cardinality ([29fd540](https://github.com/JoseVelazcoH/ERDAlchemy/commit/29fd540ba7e30e88cdde8645559f9eedb1303e8b))
+* render inheritance relationships ([4f68a02](https://github.com/JoseVelazcoH/ERDAlchemy/commit/4f68a02c37be28b3564d25779515050f1d9c18fb))
+* show column comments in html tooltips ([4baa6ed](https://github.com/JoseVelazcoH/ERDAlchemy/commit/4baa6edff07ebb87cd419d1b7ffa730c3bd96f49))
+
+
+### Bug Fixes
+
+* **html:** render column comment tooltips as svg title elements ([7acefb4](https://github.com/JoseVelazcoH/ERDAlchemy/commit/7acefb442f02339678a3100a15f6fac1f0e01d3d))
+* **introspect:** keep extra foreign keys to an inherited parent ([5825691](https://github.com/JoseVelazcoH/ERDAlchemy/commit/58256918628dd1cd0d8e01f854431ed599315312))
+
+
+### Improvements
+
+* **docs:** removes logo background ([7c7cc91](https://github.com/JoseVelazcoH/ERDAlchemy/commit/7c7cc91d1d21ec48afa4346c34c96434f8deb8a7))
+
+
+### Documentation
+
+* **readme:** add themed shieldcn header banner ([4e4270d](https://github.com/JoseVelazcoH/ERDAlchemy/commit/4e4270d5b9bafec18ff8454048f2c369326b1561))
+* use absolute GitHub URLs for README links ([de91af4](https://github.com/JoseVelazcoH/ERDAlchemy/commit/de91af4cc7108f588e7c62c30da71d4ef60a776d))
+* use absolute GitHub URLs for README links (PyPI) ([386f4d2](https://github.com/JoseVelazcoH/ERDAlchemy/commit/386f4d2b0bb8b2d295606e5e0ae7a0f81845504b))
+
 ## [0.5.0](https://github.com/JoseVelazcoH/ERDAlchemy/compare/erdalchemy-v0.4.0...erdalchemy-v0.5.0) (2026-06-21)
 
 
