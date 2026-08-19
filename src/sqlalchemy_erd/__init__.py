@@ -17,7 +17,7 @@ from sqlalchemy_erd.theme import Theme, THEMES, get_theme, apply_schema_colors
 try:
     __version__ = version("erdalchemy")
 except PackageNotFoundError:
-    __version__ = "0.5.0"  # x-release-please-version
+    __version__ = "0.6.0"  # x-release-please-version
 
 
 def generate_erd(
